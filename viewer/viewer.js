@@ -200,12 +200,50 @@ function updateSendButton() {
 
 // ===== Collapse/expand =====
 
+let controlHeight = 220; // px, user-adjustable
+
 function toggleCollapse() {
   state.collapsed = !state.collapsed;
-  document.getElementById('panels-container').classList.toggle('collapsed', state.collapsed);
-  document.getElementById('control-panel').classList.toggle('collapsed', state.collapsed);
+  const cp = document.getElementById('control-panel');
+  cp.classList.toggle('collapsed', state.collapsed);
+  if (!state.collapsed) cp.style.maxHeight = controlHeight + 'px';
   toggleBtn.innerHTML = state.collapsed ? '&#9650;' : '&#9660;';
 }
+
+// ===== Control panel vertical resize =====
+
+(function initControlResize() {
+  const resizer = document.getElementById('control-resizer');
+  const cp      = document.getElementById('control-panel');
+  if (!resizer || !cp) return;
+
+  // Set initial height
+  cp.style.maxHeight = controlHeight + 'px';
+
+  let drag = null;
+
+  resizer.addEventListener('mousedown', e => {
+    if (state.collapsed) return;
+    e.preventDefault();
+    drag = { startY: e.clientY, startH: cp.offsetHeight };
+    resizer.classList.add('dragging');
+    document.body.classList.add('resizing-v');
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const delta  = drag.startY - e.clientY; // drag up = taller
+    controlHeight = Math.max(60, Math.min(500, drag.startH + delta));
+    cp.style.maxHeight = controlHeight + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!drag) return;
+    resizer.classList.remove('dragging');
+    document.body.classList.remove('resizing-v');
+    drag = null;
+  });
+})();
 
 // ===== Reload iframes =====
 

@@ -68,9 +68,9 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  cursor: col-resize;
 }
-body.resizing .iframe-shield { display: block; }
+body.resizing .iframe-shield { display: block; cursor: col-resize; }
+body.resizing-v .iframe-shield { display: block; cursor: row-resize; }
 
 /* Disabled panel: collapses to thin clickable strip */
 .panel.disabled {
@@ -178,22 +178,50 @@ body.resizing .iframe-shield { display: block; }
   min-height: 0;
 }
 
+/* ===== Control panel resize handle ===== */
+
+#control-resizer {
+  height: 5px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: #e8e8f4;
+  position: relative;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+#control-resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 2px;
+  background: #c8c8e0;
+  border-radius: 2px;
+  transition: background 0.15s, width 0.15s;
+}
+
+#control-resizer:hover { background: #d8d4ff; }
+#control-resizer:hover::after { background: #6c63ff; width: 48px; }
+#control-resizer.dragging { background: #c8c0ff; }
+#control-resizer.dragging::after { background: #5a52e8; width: 48px; }
+
 /* ===== Control panel ===== */
 
 #control-panel {
   flex-shrink: 0;
-  max-height: 220px;
   overflow: hidden;
   background: #ffffff;
   border-top: 2px solid #d0ceff;
   box-shadow: 0 -2px 16px rgba(108, 99, 255, 0.1);
   display: flex;
   flex-direction: column;
-  transition: max-height 0.25s ease;
 }
 
 #control-panel.collapsed {
-  max-height: 44px;
+  max-height: 44px !important;
 }
 
 /* --- Top bar --- */
@@ -553,6 +581,10 @@ body.dark {
 }
 
 body.dark .panel { border-right-color: #2a2a48; }
+body.dark #control-resizer { background: #1e1e38; }
+body.dark #control-resizer::after { background: #3a3a60; }
+body.dark #control-resizer:hover { background: #2e2a60; }
+body.dark #control-resizer:hover::after { background: #8880ee; }
 body.dark .panel-divider { background: #1e1e38; }
 body.dark .panel-divider:hover { background: #3a34aa; }
 body.dark .panel-divider::after { background: #3a3a60; }
