@@ -25,11 +25,19 @@ Chat with ChatGPT, Gemini, and Claude side by side in a single tab.
 - **Sessions sidebar** — Always-visible left panel showing your saved sessions
 - **Collapsible control bar** — Collapse the bottom bar to give chat panels more room
 
-## Screenshot
+## Screenshots
 
-![ParallelChat UI](./img/ui.JPG)
+**3-panel layout — ChatGPT, Gemini, and Claude side by side**
+![Initial view](./img/1.JPG)
 
-> Sessions sidebar (left) · ChatGPT / Gemini / Claude panels · MULTI CHAT control bar (bottom)
+**Send one message to all AIs simultaneously**
+![Sending in progress](./img/2.JPG)
+
+**Compare answers from all 3 AIs at a glance**
+![All responses](./img/3.JPG)
+
+**Read each answer in detail**
+![Detail view](./img/4.JPG)
 
 ## Installation
 
