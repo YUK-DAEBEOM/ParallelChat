@@ -18,6 +18,57 @@ const state = {
 // Queue for registerFrame messages that arrive before state.tabId is set
 let pendingRegistrations = [];
 
+// ===== i18n =====
+
+const STRINGS = {
+  ko: {
+    saveSidebar:       '+ 현재 세션 저장',
+    placeholder:       '메시지를 입력하면 선택된 AI에 동시 전송됩니다...',
+    fileBtn:           '📎 파일',
+    dragOverlay:       '파일을 여기에 놓으세요',
+    sessionsEmpty:     '저장된 세션이 없습니다',
+    langBtn:           'EN',
+    sessionNotFound:   '세션을 찾을 수 없습니다.',
+    noPageLoaded:      'AI 페이지가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.',
+    sessionLoading:    name => `세션 로드 중: ${name}`,
+    sessionLoaded:     name => `✓ 세션 "${name}" 로드 완료`,
+    deleteConfirm:     name => `"${name}" 세션을 삭제하시겠습니까?`,
+    fileTooLarge:      name => `${name} — 20MB 초과 파일은 첨부할 수 없습니다.`,
+  },
+  en: {
+    saveSidebar:       '+ Save Session',
+    placeholder:       'Type a message to send to all selected AIs...',
+    fileBtn:           '📎 File',
+    dragOverlay:       'Drop files here',
+    sessionsEmpty:     'No saved sessions',
+    langBtn:           'KO',
+    sessionNotFound:   'Session not found.',
+    noPageLoaded:      'AI pages not loaded yet. Please try again.',
+    sessionLoading:    name => `Loading: ${name}`,
+    sessionLoaded:     name => `✓ Loaded "${name}"`,
+    deleteConfirm:     name => `Delete session "${name}"?`,
+    fileTooLarge:      name => `${name} — File exceeds the 20 MB limit.`,
+  }
+};
+
+let currentLang = 'ko';
+
+function t(key, ...args) {
+  const val = STRINGS[currentLang][key];
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+function applyLang(lang) {
+  currentLang = lang;
+  saveSidebarBtn.textContent = t('saveSidebar');
+  input.placeholder = t('placeholder');
+  attachBtn.textContent = t('fileBtn');
+  document.querySelector('.drag-overlay').textContent = t('dragOverlay');
+  langBtn.textContent = t('langBtn');
+  renderSidebarSessions();
+  chrome.storage.local.set({ lang });
+}
+
 // ===== Init =====
 
 async function init() {
@@ -38,6 +89,10 @@ async function init() {
   updatePanelVisibility();
   await loadSessions();
   setupWebNavigation();
+
+  // Restore saved language preference
+  const { lang = 'ko' } = await chrome.storage.local.get('lang');
+  applyLang(lang);
 
   input.focus();
 }
@@ -273,7 +328,8 @@ async function getSessions() {
 }
 
 function autoSessionName() {
-  return new Date().toLocaleString('ko-KR', {
+  const locale = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+  return new Date().toLocaleString(locale, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 }
@@ -302,7 +358,7 @@ async function saveSession(name) {
   const { lastUrls = {} } = await chrome.storage.local.get('lastUrls');
 
   if (Object.keys(lastUrls).length === 0) {
-    alert('AI 페이지가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.');
+    alert(t('noPageLoaded'));
     return null;
   }
 
@@ -332,17 +388,16 @@ async function loadSession(id) {
   const sessions = await getSessions();
   const session = sessions.find(s => s.id === id);
   if (!session) {
-    alert('세션을 찾을 수 없습니다.');
+    alert(t('sessionNotFound'));
     return;
   }
 
   state.activeKeys = session.activeKeys || [...AI_ORDER];
-  loadCheckboxState();
   updatePanelVisibility();
 
   // Show loading feedback
   const bar = document.getElementById('sendFeedback');
-  if (bar) { bar.textContent = `세션 로드 중: ${session.name}`; bar.style.opacity = '1'; }
+  if (bar) { bar.textContent = t('sessionLoading', session.name); bar.style.opacity = '1'; }
 
   // Force iframe navigation (blank first ensures reload even if URL is identical)
   for (const key of AI_ORDER) {
@@ -358,7 +413,7 @@ async function loadSession(id) {
   // Confirm to user
   if (bar) {
     setTimeout(() => {
-      bar.textContent = `✓ 세션 "${session.name}" 로드 완료`;
+      bar.textContent = t('sessionLoaded', session.name);
       setTimeout(() => { bar.style.opacity = '0'; }, 2500);
     }, 500);
   }
@@ -411,16 +466,17 @@ async function renderSidebarSessions() {
   list.innerHTML = '';
 
   if (sessions.length === 0) {
-    list.innerHTML = '<div class="sessions-empty">저장된 세션이 없습니다</div>';
+    list.innerHTML = `<div class="sessions-empty">${t('sessionsEmpty')}</div>`;
     return;
   }
 
+  const locale = currentLang === 'ko' ? 'ko-KR' : 'en-US';
   sessions.forEach(s => {
     const AI_DOT_COLOR = { chatgpt: '#10a37f', gemini: '#4285f4', claude: '#d97706' };
     const dots = (s.activeKeys || []).map(k =>
       `<span class="session-ai-dot" style="background:${AI_DOT_COLOR[k] || '#888'}"></span>`
     ).join('');
-    const date = new Date(s.timestamp).toLocaleString('ko-KR', {
+    const date = new Date(s.timestamp).toLocaleString(locale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
@@ -432,7 +488,7 @@ async function renderSidebarSessions() {
         <span class="session-item-name">${s.name}</span>
         <span class="session-item-meta"><span class="session-ai-dots">${dots}</span>${date}</span>
       </div>
-      <button class="session-item-delete" title="삭제">&#10005;</button>
+      <button class="session-item-delete" title="&#10005;">&#10005;</button>
     `;
 
     item.addEventListener('click', async (e) => {
@@ -442,7 +498,7 @@ async function renderSidebarSessions() {
 
     item.querySelector('.session-item-delete').addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm(`"${s.name}" 세션을 삭제하시겠습니까?`)) return;
+      if (!confirm(t('deleteConfirm', s.name))) return;
       await deleteSession(s.id);
       await renderSidebarSessions();
     });
@@ -456,7 +512,7 @@ async function renderSidebarSessions() {
 function addFiles(files) {
   for (const f of files) {
     if (f.size > 20 * 1024 * 1024) {
-      alert(`${f.name} — 20MB 초과 파일은 첨부할 수 없습니다.`);
+      alert(t('fileTooLarge', f.name));
       continue;
     }
     state.selectedFiles.push(f);
@@ -555,6 +611,7 @@ const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const saveSidebarBtn = document.getElementById('saveSidebarBtn');
 const themeBtn = document.getElementById('themeBtn');
+const langBtn = document.getElementById('langBtn');
 
 // ===== Event listeners =====
 
@@ -589,6 +646,12 @@ AI_ORDER.forEach(key => {
     }
     updatePanelVisibility();
   });
+});
+
+// ===== Language toggle =====
+
+langBtn.addEventListener('click', () => {
+  applyLang(currentLang === 'ko' ? 'en' : 'ko');
 });
 
 // ===== Theme toggle =====
