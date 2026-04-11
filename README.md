@@ -31,26 +31,6 @@ Chat with ChatGPT, Gemini, and Claude side by side in a single tab.
 
 > Sessions sidebar (left) · ChatGPT / Gemini / Claude panels · MULTI CHAT control bar (bottom)
 
-## Layout
-
-```
-┌────────────┬──────────────────┬──────────────────┬──────────────────┐
-│  Sessions  │ ● ChatGPT      ↺ │ ● Gemini       ↺ │ ● Claude       ↺ │
-│ ─────────  │                  │                  │                  │
-│  session 1 │    (iframe)      │    (iframe)      │    (iframe)      │
-│  session 2 │                  │                  │                  │
-│  session 3 │                  ╎                  ╎                  │
-└────────────┴──────────────────┴──────────────────┴──────────────────┘
-                            ──── resize ────
-┌──────────────────────────────────────────────────────────────────────┐
-│ MULTI CHAT      [↺ Reload]  [+ New]  [☀️ Light]                  ▼  │
-│ ┌──────────────────────────────────────────────────────────────────┐ │
-│ │ Type a message…                                                  │ │
-│ │                                                          📎  ↑ Send All │
-│ └──────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
 ## Installation
 
 1. Download or clone this repository
