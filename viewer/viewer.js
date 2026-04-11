@@ -35,7 +35,6 @@ async function init() {
   // Also discover existing iframe frames via webNavigation API (most reliable)
   await discoverFrames();
 
-  loadCheckboxState();
   updatePanelVisibility();
   await loadSessions();
   setupWebNavigation();
@@ -181,7 +180,7 @@ function updatePanelVisibility() {
   for (const key of AI_ORDER) {
     const panel = document.getElementById(`panel-${key}`);
     if (!panel) continue;
-    panel.classList.toggle('hidden', !state.activeKeys.includes(key));
+    panel.classList.toggle('disabled', !state.activeKeys.includes(key));
   }
   updateSendButton();
 }
@@ -198,21 +197,53 @@ function updateSendButton() {
   }
 }
 
-function loadCheckboxState() {
-  for (const key of AI_ORDER) {
-    const cb = document.getElementById(`chk-${key}`);
-    if (cb) cb.checked = state.activeKeys.includes(key);
-  }
-}
 
 // ===== Collapse/expand =====
 
+let controlHeight = 220; // px, user-adjustable
+
 function toggleCollapse() {
   state.collapsed = !state.collapsed;
-  document.getElementById('panels-container').classList.toggle('collapsed', state.collapsed);
-  document.getElementById('control-panel').classList.toggle('collapsed', state.collapsed);
+  const cp = document.getElementById('control-panel');
+  cp.classList.toggle('collapsed', state.collapsed);
+  if (!state.collapsed) cp.style.maxHeight = controlHeight + 'px';
   toggleBtn.innerHTML = state.collapsed ? '&#9650;' : '&#9660;';
 }
+
+// ===== Control panel vertical resize =====
+
+(function initControlResize() {
+  const resizer = document.getElementById('control-resizer');
+  const cp      = document.getElementById('control-panel');
+  if (!resizer || !cp) return;
+
+  // Set initial height
+  cp.style.maxHeight = controlHeight + 'px';
+
+  let drag = null;
+
+  resizer.addEventListener('mousedown', e => {
+    if (state.collapsed) return;
+    e.preventDefault();
+    drag = { startY: e.clientY, startH: cp.offsetHeight };
+    resizer.classList.add('dragging');
+    document.body.classList.add('resizing-v');
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const delta  = drag.startY - e.clientY; // drag up = taller
+    controlHeight = Math.max(60, Math.min(500, drag.startH + delta));
+    cp.style.maxHeight = controlHeight + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!drag) return;
+    resizer.classList.remove('dragging');
+    document.body.classList.remove('resizing-v');
+    drag = null;
+  });
+})();
 
 // ===== Reload iframes =====
 
@@ -524,6 +555,7 @@ const attachBtn = document.getElementById('attachBtn');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const saveSidebarBtn = document.getElementById('saveSidebarBtn');
+const themeBtn = document.getElementById('themeBtn');
 
 // ===== Event listeners =====
 
@@ -546,15 +578,44 @@ toggleBtn.addEventListener('click', toggleCollapse);
 relaunchBtn.addEventListener('click', () => reloadIframes(false));
 newSessionBtn.addEventListener('click', () => reloadIframes(true));
 
+// Panel header click = toggle that AI on/off
 AI_ORDER.forEach(key => {
-  const cb = document.getElementById(`chk-${key}`);
-  if (!cb) return;
-  cb.addEventListener('change', () => {
-    const active = AI_ORDER.filter(k => document.getElementById(`chk-${k}`)?.checked);
-    if (active.length === 0) { cb.checked = true; return; }
-    state.activeKeys = active;
+  const header = document.querySelector(`#panel-${key} .panel-header`);
+  if (!header) return;
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.panel-reload-btn')) return;
+    const isActive = state.activeKeys.includes(key);
+    if (isActive && state.activeKeys.length === 1) return; // 최소 1개는 유지
+    if (isActive) {
+      state.activeKeys = state.activeKeys.filter(k => k !== key);
+    } else {
+      state.activeKeys = [...state.activeKeys, key]
+        .sort((a, b) => AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b));
+    }
     updatePanelVisibility();
   });
+});
+
+// ===== Theme toggle =====
+
+let currentTheme = 'light';
+
+themeBtn.addEventListener('click', async () => {
+  currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+  const isDark = currentTheme === 'dark';
+
+  // Toggle extension UI
+  document.body.classList.toggle('dark', isDark);
+  themeBtn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+
+  // Toggle all AI service iframes
+  await discoverFrames();
+  for (const key of AI_ORDER) {
+    const frame = state.frames[key];
+    if (!frame) continue;
+    chrome.tabs.sendMessage(state.tabId, { type: 'setTheme', theme: currentTheme }, { frameId: frame.frameId })
+      .catch(() => {});
+  }
 });
 
 saveSidebarBtn.addEventListener('click', async () => {
@@ -594,6 +655,53 @@ document.addEventListener('drop', (e) => {
   document.body.classList.remove('dragging');
   if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
 });
+
+// ===== Panel resize =====
+
+(function initResize() {
+  let drag = null;
+
+  document.querySelectorAll('.panel-divider').forEach(divider => {
+    divider.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const leftKey  = divider.dataset.left;
+      const rightKey = divider.dataset.right;
+      const leftPanel  = document.getElementById(`panel-${leftKey}`);
+      const rightPanel = document.getElementById(`panel-${rightKey}`);
+      if (!leftPanel || !rightPanel) return;
+
+      // Skip if either adjacent panel is disabled (collapsed)
+      if (leftPanel.classList.contains('disabled') || rightPanel.classList.contains('disabled')) return;
+
+      drag = {
+        divider,
+        leftPanel, rightPanel,
+        startX: e.clientX,
+        startLeftW:  leftPanel.offsetWidth,
+        startRightW: rightPanel.offsetWidth,
+      };
+
+      divider.classList.add('dragging');
+      document.body.classList.add('resizing');
+    });
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const delta = e.clientX - drag.startX;
+    const newLeft  = Math.max(120, drag.startLeftW  + delta);
+    const newRight = Math.max(120, drag.startRightW - delta);
+    drag.leftPanel.style.flex  = `0 0 ${newLeft}px`;
+    drag.rightPanel.style.flex = `0 0 ${newRight}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!drag) return;
+    drag.divider.classList.remove('dragging');
+    document.body.classList.remove('resizing');
+    drag = null;
+  });
+})();
 
 // ===== Start =====
 

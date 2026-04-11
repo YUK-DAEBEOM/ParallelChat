@@ -1,6 +1,7 @@
 // Gemini content script (shared.js loaded first)
 registerFrame('gemini');
 
+
 // --- Input selectors: ordered from most to least specific ---
 const INPUT_SELECTORS = [
   // Quill editor (older Gemini)
@@ -178,6 +179,28 @@ async function waitForSendButton(maxWaitMs = 4000) {
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'setTheme') {
+    const html = document.documentElement;
+    const isDark = message.theme === 'dark';
+    html.style.colorScheme = isDark ? 'dark' : 'light';
+    // Toggle Material Design 3 override style
+    const existing = document.getElementById('parallelchat-theme');
+    if (existing) existing.remove();
+    if (isDark) {
+      const style = document.createElement('style');
+      style.id = 'parallelchat-theme';
+      style.textContent = `:root {
+        color-scheme: dark !important;
+        --md-sys-color-background: #1c1b1f !important;
+        --md-sys-color-surface: #141218 !important;
+        --md-sys-color-on-background: #e6e1e5 !important;
+        --md-sys-color-on-surface: #e6e1e5 !important;
+      }`;
+      document.head.appendChild(style);
+    }
+    sendResponse({ ok: true });
+    return;
+  }
   if (message.type === 'inputText') {
     handleMessage(message)
       .then(() => sendResponse({ success: true }))
