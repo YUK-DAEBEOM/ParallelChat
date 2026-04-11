@@ -11,6 +11,15 @@
   <!-- Main area: panels + always-visible sessions sidebar -->
   <div class="main-area">
 
+    <!-- Sessions sidebar (always visible, left side) -->
+    <div id="sessions-sidebar" class="sessions-sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Sessions</span>
+      </div>
+      <button id="saveSidebarBtn" class="sidebar-save-btn">&#43; 현재 세션 저장</button>
+      <div id="sessionsList" class="sessions-list"></div>
+    </div>
+
     <!-- AI iframe panels -->
     <div id="panels-container">
       <div class="panel" id="panel-chatgpt">
@@ -37,15 +46,6 @@
         </div>
         <iframe id="iframe-claude" src="https://claude.ai/" title="Claude"></iframe>
       </div>
-    </div>
-
-    <!-- Sessions sidebar (always visible) -->
-    <div id="sessions-sidebar" class="sessions-sidebar">
-      <div class="sidebar-header">
-        <span class="sidebar-title">Sessions</span>
-      </div>
-      <button id="saveSidebarBtn" class="sidebar-save-btn">&#43; 현재 세션 저장</button>
-      <div id="sessionsList" class="sessions-list"></div>
     </div>
 
   </div>
