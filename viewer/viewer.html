@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Multi Chat</title>
+  <title>Parallel Chat</title>
   <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
@@ -24,28 +24,76 @@
     <!-- AI iframe panels -->
     <div id="panels-container">
       <div class="panel" id="panel-chatgpt">
-        <div class="panel-header">
+        <div class="panel-header" id="panel-header-chatgpt">
           <span class="panel-dot gpt"></span>
           <span class="panel-name">ChatGPT</span>
+          <span class="panel-toggle-hint"></span>
           <button class="panel-reload-btn" data-key="chatgpt" title="이 패널 새로고침">↺</button>
+        </div>
+        <div class="panel-loading" id="loading-chatgpt">
+          <div class="loading-spinner"></div>
+        </div>
+        <div class="panel-onboarding" id="onboarding-chatgpt" data-key="chatgpt">
+          <button class="onboarding-close" aria-label="안내 닫기">×</button>
+          <div class="onboarding-body">
+            <span class="onboarding-icon">🤖</span>
+            <strong class="onboarding-name">ChatGPT</strong>
+            <ol class="onboarding-steps">
+              <li>먼저 로그인하세요</li>
+              <li>입력하고 Send All 클릭</li>
+            </ol>
+            <button class="onboarding-link-btn" data-url="https://chatgpt.com/">chatgpt.com으로 이동</button>
+          </div>
         </div>
         <iframe id="iframe-chatgpt" src="https://chatgpt.com/" title="ChatGPT"></iframe>
       </div>
       <div class="panel-divider" data-left="chatgpt" data-right="gemini"></div>
       <div class="panel" id="panel-gemini">
-        <div class="panel-header">
+        <div class="panel-header" id="panel-header-gemini">
           <span class="panel-dot gemini"></span>
           <span class="panel-name">Gemini</span>
+          <span class="panel-toggle-hint"></span>
           <button class="panel-reload-btn" data-key="gemini" title="이 패널 새로고침">↺</button>
+        </div>
+        <div class="panel-loading" id="loading-gemini">
+          <div class="loading-spinner"></div>
+        </div>
+        <div class="panel-onboarding" id="onboarding-gemini" data-key="gemini">
+          <button class="onboarding-close" aria-label="안내 닫기">×</button>
+          <div class="onboarding-body">
+            <span class="onboarding-icon">✨</span>
+            <strong class="onboarding-name">Gemini</strong>
+            <ol class="onboarding-steps">
+              <li>먼저 로그인하세요</li>
+              <li>입력하고 Send All 클릭</li>
+            </ol>
+            <button class="onboarding-link-btn" data-url="https://gemini.google.com/app">Gemini 사이트로 이동</button>
+          </div>
         </div>
         <iframe id="iframe-gemini" src="https://gemini.google.com/app" title="Gemini"></iframe>
       </div>
       <div class="panel-divider" data-left="gemini" data-right="claude"></div>
       <div class="panel" id="panel-claude">
-        <div class="panel-header">
+        <div class="panel-header" id="panel-header-claude">
           <span class="panel-dot claude"></span>
           <span class="panel-name">Claude</span>
+          <span class="panel-toggle-hint"></span>
           <button class="panel-reload-btn" data-key="claude" title="이 패널 새로고침">↺</button>
+        </div>
+        <div class="panel-loading" id="loading-claude">
+          <div class="loading-spinner"></div>
+        </div>
+        <div class="panel-onboarding" id="onboarding-claude" data-key="claude">
+          <button class="onboarding-close" aria-label="안내 닫기">×</button>
+          <div class="onboarding-body">
+            <span class="onboarding-icon">🔶</span>
+            <strong class="onboarding-name">Claude</strong>
+            <ol class="onboarding-steps">
+              <li>먼저 로그인하세요</li>
+              <li>입력하고 Send All 클릭</li>
+            </ol>
+            <button class="onboarding-link-btn" data-url="https://claude.ai/">Claude 사이트로 이동</button>
+          </div>
         </div>
         <iframe id="iframe-claude" src="https://claude.ai/" title="Claude"></iframe>
       </div>
@@ -62,11 +110,13 @@
     <!-- Always-visible top bar -->
     <div class="top-bar">
       <div class="top-bar-left">
-        <span class="title">MULTI CHAT</span>
+        <span class="title">PARALLEL CHAT</span>
+        <a href="privacy.html" target="_blank" class="privacy-link">Privacy</a>
       </div>
       <div class="top-bar-right">
         <button class="icon-btn" id="relaunchBtn" title="현재 URL 유지 리로드">&#8635; Reload</button>
         <button class="icon-btn danger" id="newSessionBtn" title="새 세션 (초기화)">&#43; New</button>
+        <button class="icon-btn" id="langBtn" title="언어 전환">EN</button>
         <button class="icon-btn" id="themeBtn" title="AI 서비스 테마 전환">☀️ Light</button>
         <button class="toggle-btn" id="toggleBtn" title="접기 / 펼치기">&#9660;</button>
       </div>

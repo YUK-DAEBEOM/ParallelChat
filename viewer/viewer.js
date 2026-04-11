@@ -6,6 +6,11 @@ const AI_DEFAULTS = {
   gemini: 'https://gemini.google.com/app',
   claude: 'https://claude.ai/'
 };
+const AI_INFO = {
+  chatgpt: { name: 'ChatGPT', icon: '🤖', url: 'https://chatgpt.com/' },
+  gemini:  { name: 'Gemini',  icon: '✨', url: 'https://gemini.google.com/app' },
+  claude:  { name: 'Claude',  icon: '🔶', url: 'https://claude.ai/' },
+};
 
 const state = {
   tabId: null,
@@ -18,11 +23,165 @@ const state = {
 // Queue for registerFrame messages that arrive before state.tabId is set
 let pendingRegistrations = [];
 
+// ===== i18n =====
+
+const STRINGS = {
+  ko: {
+    saveSidebar:        '+ 현재 세션 저장',
+    placeholder:        '메시지를 입력하면 선택된 AI에 동시 전송됩니다...',
+    fileBtn:            '📎 파일',
+    dragOverlay:        '파일을 여기에 놓으세요',
+    sessionsEmpty:      '저장된 세션이 없습니다',
+    langBtn:            'EN',
+    sessionNotFound:    '세션을 찾을 수 없습니다.',
+    noPageLoaded:       'AI 페이지가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.',
+    sessionLoading:     name => `세션 로드 중: ${name}`,
+    sessionLoaded:      name => `✓ 세션 "${name}" 로드 완료`,
+    deleteConfirm:      name => `"${name}" 세션을 삭제하시겠습니까?`,
+    fileTooLarge:       name => `${name} — 20MB 초과 파일은 첨부할 수 없습니다.`,
+    onboardingStep1:    '먼저 로그인하세요',
+    onboardingStep2:    '입력하고 Send All 클릭',
+    onboardingGoBtn:    name => `${name} 사이트로 이동`,
+    clickToHide:        '클릭하여 끄기',
+    clickToShow:        '클릭하여 켜기',
+  },
+  en: {
+    saveSidebar:        '+ Save Session',
+    placeholder:        'Type a message to send to all selected AIs...',
+    fileBtn:            '📎 File',
+    dragOverlay:        'Drop files here',
+    sessionsEmpty:      'No saved sessions',
+    langBtn:            'KO',
+    sessionNotFound:    'Session not found.',
+    noPageLoaded:       'AI pages not loaded yet. Please try again.',
+    sessionLoading:     name => `Loading: ${name}`,
+    sessionLoaded:      name => `✓ Loaded "${name}"`,
+    deleteConfirm:      name => `Delete session "${name}"?`,
+    fileTooLarge:       name => `${name} — File exceeds the 20 MB limit.`,
+    onboardingStep1:    'Sign in first',
+    onboardingStep2:    'Type and click Send All',
+    onboardingGoBtn:    name => `Go to ${name}`,
+    clickToHide:        'Click to hide',
+    clickToShow:        'Click to show',
+  }
+};
+
+let currentLang = 'ko';
+
+function t(key, ...args) {
+  const val = STRINGS[currentLang][key];
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+function applyLang(lang) {
+  currentLang = lang;
+  saveSidebarBtn.textContent = t('saveSidebar');
+  input.placeholder = t('placeholder');
+  attachBtn.textContent = t('fileBtn');
+  document.querySelector('.drag-overlay').textContent = t('dragOverlay');
+  langBtn.textContent = t('langBtn');
+  renderSidebarSessions();
+  updateOnboardingText();
+  updatePanelToggleHints();
+  chrome.storage.local.set({ lang });
+}
+
+// ===== Onboarding =====
+
+// 각 AI의 로그인 페이지 URL 패턴
+const LOGIN_URL_PATTERNS = {
+  chatgpt: ['auth.openai.com', 'chatgpt.com/auth', 'openai.com/account'],
+  gemini:  ['accounts.google.com'],
+  claude:  ['claude.ai/login', 'auth.claude.ai', 'claude.ai/upgrade'],
+};
+
+function isLoginUrl(key, url) {
+  return LOGIN_URL_PATTERNS[key]?.some(p => url.includes(p)) ?? false;
+}
+
+function showOnboarding(key) {
+  const overlay = document.getElementById(`onboarding-${key}`);
+  if (overlay) overlay.classList.add('visible');
+}
+
+function hideOnboarding(key) {
+  const overlay = document.getElementById(`onboarding-${key}`);
+  if (overlay) overlay.classList.remove('visible');
+}
+
+async function initOnboarding() {
+  // 닫기 / 링크 버튼 이벤트만 등록 — 기본은 숨김 상태
+  for (const key of AI_ORDER) {
+    const overlay = document.getElementById(`onboarding-${key}`);
+    if (!overlay) continue;
+
+    overlay.querySelector('.onboarding-close').addEventListener('click', () => {
+      hideOnboarding(key);
+    });
+
+    overlay.querySelector('.onboarding-link-btn').addEventListener('click', () => {
+      chrome.tabs.create({ url: AI_INFO[key].url });
+    });
+  }
+
+  updateOnboardingText();
+
+  // 초기 로드된 iframe URL 확인 — 이미 로그인 페이지면 즉시 오버레이 표시
+  if (!state.tabId) return;
+  try {
+    const frames = await chrome.webNavigation.getAllFrames({ tabId: state.tabId });
+    for (const frame of frames) {
+      if (frame.parentFrameId !== 0) continue;
+      for (const key of AI_ORDER) {
+        if (isLoginUrl(key, frame.url)) showOnboarding(key);
+      }
+    }
+  } catch (_) {}
+}
+
+function updateOnboardingText() {
+  for (const key of AI_ORDER) {
+    const overlay = document.getElementById(`onboarding-${key}`);
+    if (!overlay) continue;
+    const steps = overlay.querySelectorAll('.onboarding-steps li');
+    if (steps[0]) steps[0].textContent = t('onboardingStep1');
+    if (steps[1]) steps[1].textContent = t('onboardingStep2');
+    const linkBtn = overlay.querySelector('.onboarding-link-btn');
+    if (linkBtn) linkBtn.textContent = t('onboardingGoBtn', AI_INFO[key].name);
+  }
+}
+
+function dismissOnboarding() {
+  document.querySelectorAll('.panel-onboarding').forEach(el => el.classList.remove('visible'));
+}
+
 // ===== Init =====
+
+async function loadPersistedState() {
+  const { activeKeys, controlHeight: savedHeight, theme } =
+    await chrome.storage.local.get(['activeKeys', 'controlHeight', 'theme']);
+
+  if (activeKeys) state.activeKeys = activeKeys;
+
+  if (savedHeight) {
+    controlHeight = savedHeight;
+    const cp = document.getElementById('control-panel');
+    if (cp) cp.style.height = controlHeight + 'px';
+  }
+
+  if (theme === 'dark') {
+    currentTheme = 'dark';
+    document.body.classList.add('dark');
+    themeBtn.textContent = '🌙 Dark';
+  }
+}
 
 async function init() {
   const tabInfo = await chrome.tabs.getCurrent();
   state.tabId = tabInfo.id;
+
+  // 저장된 상태 복원 (activeKeys, controlHeight, theme)
+  await loadPersistedState();
 
   // Flush any registerFrame messages that arrived before tabId was ready
   for (const { msg, sender } of pendingRegistrations) {
@@ -39,7 +198,37 @@ async function init() {
   await loadSessions();
   setupWebNavigation();
 
+  // Restore saved language preference
+  const { lang = 'ko' } = await chrome.storage.local.get('lang');
+  applyLang(lang);
+
+  setupLoadingSpinners();
+  await initOnboarding();
   input.focus();
+}
+
+// ===== Loading spinners =====
+
+function setupLoadingSpinners() {
+  for (const key of AI_ORDER) {
+    const iframe  = document.getElementById(`iframe-${key}`);
+    const spinner = document.getElementById(`loading-${key}`);
+    if (!iframe || !spinner) continue;
+
+    // iframe이 로드 완료되면 스피너 숨김
+    iframe.addEventListener('load', () => {
+      spinner.classList.add('done');
+    });
+  }
+}
+
+function showSpinner(key) {
+  const spinner = document.getElementById(`loading-${key}`);
+  if (spinner) spinner.classList.remove('done');
+}
+
+function showAllSpinners() {
+  AI_ORDER.forEach(showSpinner);
 }
 
 // ===== Frame registration from content scripts =====
@@ -101,6 +290,12 @@ function setupWebNavigation() {
       if (frame.frameId === details.frameId) {
         state.frames[key].url = details.url;
         debouncedAutoSave();
+        // 로그인 페이지 여부에 따라 오버레이 표시/숨김
+        if (isLoginUrl(key, details.url)) {
+          showOnboarding(key);
+        } else {
+          hideOnboarding(key);
+        }
         return;
       }
     }
@@ -110,6 +305,7 @@ function setupWebNavigation() {
       if (details.url.startsWith(new URL(defaultUrl).origin)) {
         state.frames[key] = { frameId: details.frameId, url: details.url };
         debouncedAutoSave();
+        if (isLoginUrl(key, details.url)) showOnboarding(key);
         break;
       }
     }
@@ -182,7 +378,27 @@ function updatePanelVisibility() {
     if (!panel) continue;
     panel.classList.toggle('disabled', !state.activeKeys.includes(key));
   }
+
+  // 양쪽 패널이 모두 비활성일 때만 divider 숨김
+  document.querySelectorAll('.panel-divider').forEach(divider => {
+    const leftActive  = state.activeKeys.includes(divider.dataset.left);
+    const rightActive = state.activeKeys.includes(divider.dataset.right);
+    divider.classList.toggle('hidden', !leftActive && !rightActive);
+  });
+
+  updatePanelToggleHints();
   updateSendButton();
+}
+
+function updatePanelToggleHints() {
+  for (const key of AI_ORDER) {
+    const header = document.getElementById(`panel-header-${key}`);
+    const hint   = header?.querySelector('.panel-toggle-hint');
+    if (!header || !hint) continue;
+    const isActive = state.activeKeys.includes(key);
+    header.title   = isActive ? t('clickToHide') : t('clickToShow');
+    hint.textContent = isActive ? t('clickToHide') : t('clickToShow');
+  }
 }
 
 const AI_LABEL = { chatgpt: 'GPT', gemini: 'Gem', claude: 'Cla' };
@@ -200,13 +416,13 @@ function updateSendButton() {
 
 // ===== Collapse/expand =====
 
-let controlHeight = 220; // px, user-adjustable
+let controlHeight = 130; // px, user-adjustable
 
 function toggleCollapse() {
   state.collapsed = !state.collapsed;
   const cp = document.getElementById('control-panel');
   cp.classList.toggle('collapsed', state.collapsed);
-  if (!state.collapsed) cp.style.maxHeight = controlHeight + 'px';
+  if (!state.collapsed) cp.style.height = controlHeight + 'px';
   toggleBtn.innerHTML = state.collapsed ? '&#9650;' : '&#9660;';
 }
 
@@ -218,7 +434,7 @@ function toggleCollapse() {
   if (!resizer || !cp) return;
 
   // Set initial height
-  cp.style.maxHeight = controlHeight + 'px';
+  cp.style.height = controlHeight + 'px';
 
   let drag = null;
 
@@ -234,7 +450,7 @@ function toggleCollapse() {
     if (!drag) return;
     const delta  = drag.startY - e.clientY; // drag up = taller
     controlHeight = Math.max(60, Math.min(500, drag.startH + delta));
-    cp.style.maxHeight = controlHeight + 'px';
+    cp.style.height = controlHeight + 'px';
   });
 
   document.addEventListener('mouseup', () => {
@@ -242,6 +458,7 @@ function toggleCollapse() {
     resizer.classList.remove('dragging');
     document.body.classList.remove('resizing-v');
     drag = null;
+    chrome.storage.local.set({ controlHeight });
   });
 })();
 
@@ -261,7 +478,10 @@ async function reloadIframes(forceNew = false) {
   // Content scripts will re-register on load, updating the entries.
   for (const key of AI_ORDER) {
     const iframe = document.getElementById(`iframe-${key}`);
-    if (iframe) iframe.src = urls[key] || AI_DEFAULTS[key];
+    if (iframe) {
+      showSpinner(key);
+      iframe.src = urls[key] || AI_DEFAULTS[key];
+    }
   }
 }
 
@@ -273,7 +493,8 @@ async function getSessions() {
 }
 
 function autoSessionName() {
-  return new Date().toLocaleString('ko-KR', {
+  const locale = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+  return new Date().toLocaleString(locale, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 }
@@ -302,7 +523,7 @@ async function saveSession(name) {
   const { lastUrls = {} } = await chrome.storage.local.get('lastUrls');
 
   if (Object.keys(lastUrls).length === 0) {
-    alert('AI 페이지가 아직 로드되지 않았습니다. 잠시 후 다시 시도하세요.');
+    alert(t('noPageLoaded'));
     return null;
   }
 
@@ -332,17 +553,16 @@ async function loadSession(id) {
   const sessions = await getSessions();
   const session = sessions.find(s => s.id === id);
   if (!session) {
-    alert('세션을 찾을 수 없습니다.');
+    alert(t('sessionNotFound'));
     return;
   }
 
   state.activeKeys = session.activeKeys || [...AI_ORDER];
-  loadCheckboxState();
   updatePanelVisibility();
 
   // Show loading feedback
   const bar = document.getElementById('sendFeedback');
-  if (bar) { bar.textContent = `세션 로드 중: ${session.name}`; bar.style.opacity = '1'; }
+  if (bar) { bar.textContent = t('sessionLoading', session.name); bar.style.opacity = '1'; }
 
   // Force iframe navigation (blank first ensures reload even if URL is identical)
   for (const key of AI_ORDER) {
@@ -358,7 +578,7 @@ async function loadSession(id) {
   // Confirm to user
   if (bar) {
     setTimeout(() => {
-      bar.textContent = `✓ 세션 "${session.name}" 로드 완료`;
+      bar.textContent = t('sessionLoaded', session.name);
       setTimeout(() => { bar.style.opacity = '0'; }, 2500);
     }, 500);
   }
@@ -411,16 +631,17 @@ async function renderSidebarSessions() {
   list.innerHTML = '';
 
   if (sessions.length === 0) {
-    list.innerHTML = '<div class="sessions-empty">저장된 세션이 없습니다</div>';
+    list.innerHTML = `<div class="sessions-empty">${t('sessionsEmpty')}</div>`;
     return;
   }
 
+  const locale = currentLang === 'ko' ? 'ko-KR' : 'en-US';
   sessions.forEach(s => {
     const AI_DOT_COLOR = { chatgpt: '#10a37f', gemini: '#4285f4', claude: '#d97706' };
     const dots = (s.activeKeys || []).map(k =>
       `<span class="session-ai-dot" style="background:${AI_DOT_COLOR[k] || '#888'}"></span>`
     ).join('');
-    const date = new Date(s.timestamp).toLocaleString('ko-KR', {
+    const date = new Date(s.timestamp).toLocaleString(locale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
@@ -432,17 +653,25 @@ async function renderSidebarSessions() {
         <span class="session-item-name">${s.name}</span>
         <span class="session-item-meta"><span class="session-ai-dots">${dots}</span>${date}</span>
       </div>
-      <button class="session-item-delete" title="삭제">&#10005;</button>
+      <button class="session-item-delete" title="&#10005;">&#10005;</button>
     `;
 
     item.addEventListener('click', async (e) => {
       if (e.target.closest('.session-item-delete')) return;
+      if (e.target.closest('.session-item-name')) return; // 이름 편집 클릭은 세션 로드 금지
       await loadSession(s.id);
+    });
+
+    // 세션 이름 클릭 → 인라인 편집
+    const nameSpan = item.querySelector('.session-item-name');
+    nameSpan.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startEditingSessionName(nameSpan, s);
     });
 
     item.querySelector('.session-item-delete').addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm(`"${s.name}" 세션을 삭제하시겠습니까?`)) return;
+      if (!confirm(t('deleteConfirm', s.name))) return;
       await deleteSession(s.id);
       await renderSidebarSessions();
     });
@@ -451,12 +680,48 @@ async function renderSidebarSessions() {
   });
 }
 
+// ===== Session name inline editing =====
+
+function startEditingSessionName(span, session) {
+  const oldName = session.name;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'session-name-input';
+  input.value = oldName;
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let saved = false;
+
+  async function save() {
+    if (saved) return;
+    saved = true;
+    const newName = input.value.trim() || oldName;
+    const sessions = await getSessions();
+    const idx = sessions.findIndex(s => s.id === session.id);
+    if (idx !== -1) {
+      sessions[idx].name = newName;
+      await chrome.storage.local.set({ sessions });
+    }
+    await renderSidebarSessions();
+  }
+
+  input.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); await save(); }
+    if (e.key === 'Escape') { saved = true; await renderSidebarSessions(); }
+  });
+
+  // blur는 삭제 버튼 mousedown 이후 발생 가능 — 짧은 지연으로 방지
+  input.addEventListener('blur', () => setTimeout(save, 120));
+}
+
 // ===== File handling =====
 
 function addFiles(files) {
   for (const f of files) {
     if (f.size > 20 * 1024 * 1024) {
-      alert(`${f.name} — 20MB 초과 파일은 첨부할 수 없습니다.`);
+      alert(t('fileTooLarge', f.name));
       continue;
     }
     state.selectedFiles.push(f);
@@ -506,6 +771,7 @@ async function sendMessage() {
   const targets = state.activeKeys;
   if (targets.length === 0) return;
 
+  dismissOnboarding(); // 첫 전송 시 안내 오버레이 자동 닫기
   sendBtn.disabled = true;
   sendBtn.textContent = 'Sending...';
 
@@ -516,7 +782,6 @@ async function sendMessage() {
   sendBtn.disabled = false;
   updateSendButton();
   input.value = '';
-  input.style.height = 'auto';
   state.selectedFiles = [];
   renderFileList();
   showSendFeedback(results);
@@ -556,6 +821,7 @@ const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const saveSidebarBtn = document.getElementById('saveSidebarBtn');
 const themeBtn = document.getElementById('themeBtn');
+const langBtn = document.getElementById('langBtn');
 
 // ===== Event listeners =====
 
@@ -568,11 +834,7 @@ input.addEventListener('keydown', (e) => {
   }
 });
 
-// Auto-grow textarea (1 line min, 4 lines max)
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 96) + 'px';
-});
+// textarea는 flex: 1 로 컨테이너를 채우므로 auto-grow 불필요
 
 toggleBtn.addEventListener('click', toggleCollapse);
 relaunchBtn.addEventListener('click', () => reloadIframes(false));
@@ -593,7 +855,14 @@ AI_ORDER.forEach(key => {
         .sort((a, b) => AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b));
     }
     updatePanelVisibility();
+    chrome.storage.local.set({ activeKeys: state.activeKeys });
   });
+});
+
+// ===== Language toggle =====
+
+langBtn.addEventListener('click', () => {
+  applyLang(currentLang === 'ko' ? 'en' : 'ko');
 });
 
 // ===== Theme toggle =====
@@ -607,6 +876,7 @@ themeBtn.addEventListener('click', async () => {
   // Toggle extension UI
   document.body.classList.toggle('dark', isDark);
   themeBtn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+  chrome.storage.local.set({ theme: currentTheme });
 
   // Toggle all AI service iframes
   await discoverFrames();
