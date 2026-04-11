@@ -517,6 +517,7 @@ const attachBtn = document.getElementById('attachBtn');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const saveSidebarBtn = document.getElementById('saveSidebarBtn');
+const themeBtn = document.getElementById('themeBtn');
 
 // ===== Event listeners =====
 
@@ -555,6 +556,23 @@ AI_ORDER.forEach(key => {
     }
     updatePanelVisibility();
   });
+});
+
+// ===== Theme toggle =====
+
+let currentTheme = 'light';
+
+themeBtn.addEventListener('click', async () => {
+  currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+  themeBtn.textContent = currentTheme === 'light' ? '☀️ Light' : '🌙 Dark';
+
+  await discoverFrames();
+  for (const key of AI_ORDER) {
+    const frame = state.frames[key];
+    if (!frame) continue;
+    chrome.tabs.sendMessage(state.tabId, { type: 'setTheme', theme: currentTheme }, { frameId: frame.frameId })
+      .catch(() => {});
+  }
 });
 
 saveSidebarBtn.addEventListener('click', async () => {

@@ -19,6 +19,20 @@ const FILE_INPUT_SELECTORS = [
 ];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'setTheme') {
+    const html = document.documentElement;
+    if (message.theme === 'dark') {
+      html.classList.add('dark');
+      html.style.colorScheme = 'dark';
+      try { localStorage.setItem('theme', 'dark'); } catch (_) {}
+    } else {
+      html.classList.remove('dark');
+      html.style.colorScheme = 'light';
+      try { localStorage.setItem('theme', 'light'); } catch (_) {}
+    }
+    sendResponse({ ok: true });
+    return;
+  }
   if (message.type === 'inputText') {
     handleMessage(message)
       .then(() => sendResponse({ success: true }))
