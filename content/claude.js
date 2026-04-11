@@ -21,15 +21,28 @@ const FILE_INPUT_SELECTORS = [
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'setTheme') {
     const html = document.documentElement;
-    if (message.theme === 'dark') {
-      html.classList.add('dark');
-      html.style.colorScheme = 'dark';
-      try { localStorage.setItem('theme', 'dark'); } catch (_) {}
-    } else {
-      html.classList.remove('dark');
-      html.style.colorScheme = 'light';
-      try { localStorage.setItem('theme', 'light'); } catch (_) {}
+    const dark = message.theme === 'dark';
+
+    // Apply immediately
+    html.classList.toggle('dark', dark);
+    html.style.colorScheme = dark ? 'dark' : 'light';
+    html.setAttribute('data-color-mode', dark ? 'dark' : 'light');
+
+    // Try every known localStorage key Claude might use
+    try {
+      const val = dark ? 'dark' : 'light';
+      ['theme', 'colorScheme', 'color-scheme', 'ui-theme'].forEach(k => localStorage.setItem(k, val));
+    } catch (_) {}
+
+    // Keep it applied — Claude's React may re-render and strip the class
+    if (window._pcThemeObserver) window._pcThemeObserver.disconnect();
+    if (dark) {
+      window._pcThemeObserver = new MutationObserver(() => {
+        if (!html.classList.contains('dark')) html.classList.add('dark');
+      });
+      window._pcThemeObserver.observe(html, { attributes: true, attributeFilter: ['class'] });
     }
+
     sendResponse({ ok: true });
     return;
   }

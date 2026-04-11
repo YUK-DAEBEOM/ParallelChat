@@ -564,8 +564,13 @@ let currentTheme = 'light';
 
 themeBtn.addEventListener('click', async () => {
   currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-  themeBtn.textContent = currentTheme === 'light' ? '☀️ Light' : '🌙 Dark';
+  const isDark = currentTheme === 'dark';
 
+  // Toggle extension UI
+  document.body.classList.toggle('dark', isDark);
+  themeBtn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+
+  // Toggle all AI service iframes
   await discoverFrames();
   for (const key of AI_ORDER) {
     const frame = state.frames[key];

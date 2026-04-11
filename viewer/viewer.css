@@ -544,3 +544,85 @@ button {
 }
 
 body.dragging .drag-overlay { display: flex; }
+
+/* ===== Dark mode for extension UI ===== */
+
+body.dark {
+  background: #0d0d1a;
+  color: #e0e0f0;
+}
+
+body.dark .panel { border-right-color: #2a2a48; }
+body.dark .panel-divider { background: #1e1e38; }
+body.dark .panel-divider:hover { background: #3a34aa; }
+body.dark .panel-divider::after { background: #3a3a60; }
+body.dark .panel-divider:hover::after { background: #8880ee; }
+
+body.dark .panel-header {
+  background: #12121e;
+  border-bottom-color: #2a2a48;
+}
+body.dark .panel-header:hover { background: #1c1c30; }
+body.dark .panel-name { color: #9090cc; }
+body.dark .panel-reload-btn { color: #55558a; }
+body.dark .panel-reload-btn:hover { color: #aaa8ff; border-color: #3a3a5a; background: rgba(108,99,255,0.12); }
+
+body.dark .panel.disabled .panel-header { opacity: 0.3; }
+
+body.dark #control-panel {
+  background: #0f1228;
+  border-top-color: rgba(108,99,255,0.5);
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.6);
+}
+body.dark .top-bar {
+  background: #0d1020;
+  border-bottom-color: #2a2a50;
+}
+body.dark .title { color: #8880ee; }
+body.dark .icon-btn {
+  background: rgba(40,40,70,0.8);
+  border-color: #2a2a4a;
+  color: #8888bb;
+}
+body.dark .icon-btn:hover { background: #3a3a5a; color: #fff; border-color: #4a4a6a; }
+body.dark .icon-btn.danger:hover { background: rgba(74,30,30,0.9); color: #ff8080; border-color: #6a3a3a; }
+body.dark .toggle-btn { background: rgba(40,40,70,0.8); border-color: #2a2a4a; color: #777; }
+body.dark .toggle-btn:hover { border-color: #6c63ff; color: #aaa8ff; background: rgba(108,99,255,0.15); }
+
+body.dark .main-content { background: #0f1228; }
+body.dark .input-container {
+  background: rgba(8,10,24,0.9);
+  border-color: rgba(108,99,255,0.3);
+}
+body.dark .input-container:focus-within {
+  border-color: rgba(108,99,255,0.6);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.08);
+}
+body.dark textarea { color: #e8e8f0; }
+body.dark textarea::placeholder { color: #3a3a58; }
+body.dark .file-attach-btn { background: rgba(42,42,74,0.6); color: #777; border-color: #2a2a4a; }
+body.dark .file-attach-btn:hover { background: rgba(60,60,100,0.8); color: #bbb; }
+body.dark .file-chip { background: rgba(42,42,74,0.9); color: #ccc; border-color: rgba(108,99,255,0.2); }
+body.dark .send-btn:disabled { background: #2a2a3a; color: #555; }
+
+body.dark .sessions-sidebar {
+  background: rgba(10,12,28,0.98);
+  border-right-color: rgba(108,99,255,0.3);
+}
+body.dark .sidebar-header { border-bottom-color: rgba(108,99,255,0.2); }
+body.dark .sidebar-title { color: #8880ee; }
+body.dark .sidebar-save-btn {
+  background: rgba(108,99,255,0.08);
+  border-color: rgba(108,99,255,0.25);
+  color: #8880ee;
+}
+body.dark .sidebar-save-btn:hover { background: rgba(108,99,255,0.18); color: #aaa8ff; }
+body.dark .sessions-list::-webkit-scrollbar-thumb { background: #2a2a4a; }
+body.dark .sessions-empty { color: #3a3a5a; }
+body.dark .session-item { border-bottom-color: rgba(40,40,70,0.8); }
+body.dark .session-item:hover { background: rgba(108,99,255,0.07); }
+body.dark .session-item.active-session { background: rgba(108,99,255,0.12); }
+body.dark .session-item-name { color: #ccccee; }
+body.dark .session-item-meta { color: #55557a; }
+body.dark .session-item-delete { color: #3a3a5a; }
+body.dark .session-item-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
