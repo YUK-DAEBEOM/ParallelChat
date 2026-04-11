@@ -1,27 +1,6 @@
 // Gemini content script (shared.js loaded first)
 registerFrame('gemini');
 
-// Force dark mode — Gemini uses Material Design 3 color tokens + color-scheme
-(function forceDarkMode() {
-  const html = document.documentElement;
-  html.style.colorScheme = 'dark';
-  html.setAttribute('dark', '');
-  try { localStorage.setItem('darkMode', '1'); } catch (_) {}
-
-  // Override Material Design 3 dark tokens via CSS
-  const style = document.createElement('style');
-  style.textContent = `
-    :root {
-      color-scheme: dark !important;
-      --md-sys-color-background: #1c1b1f !important;
-      --md-sys-color-surface: #141218 !important;
-      --md-sys-color-surface-variant: #2b2930 !important;
-      --md-sys-color-on-background: #e6e1e5 !important;
-      --md-sys-color-on-surface: #e6e1e5 !important;
-    }
-  `;
-  (document.head || document.documentElement).appendChild(style);
-})();
 
 // --- Input selectors: ordered from most to least specific ---
 const INPUT_SELECTORS = [
