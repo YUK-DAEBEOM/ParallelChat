@@ -183,6 +183,19 @@ function updatePanelVisibility() {
     if (!panel) continue;
     panel.classList.toggle('hidden', !state.activeKeys.includes(key));
   }
+  updateSendButton();
+}
+
+const AI_LABEL = { chatgpt: 'GPT', gemini: 'Gem', claude: 'Cla' };
+
+function updateSendButton() {
+  if (sendBtn.disabled) return;
+  if (state.activeKeys.length === 3) {
+    sendBtn.innerHTML = '&#9650; Send All';
+  } else {
+    const names = state.activeKeys.map(k => AI_LABEL[k]).join(' · ');
+    sendBtn.innerHTML = `&#9650; ${names}`;
+  }
 }
 
 function loadCheckboxState() {
@@ -372,9 +385,10 @@ async function renderSidebarSessions() {
   }
 
   sessions.forEach(s => {
-    const keys = (s.activeKeys || []).map(k =>
-      k === 'chatgpt' ? 'GPT' : k === 'gemini' ? 'Gem' : 'Cla'
-    ).join(' + ');
+    const AI_DOT_COLOR = { chatgpt: '#10a37f', gemini: '#4285f4', claude: '#d97706' };
+    const dots = (s.activeKeys || []).map(k =>
+      `<span class="session-ai-dot" style="background:${AI_DOT_COLOR[k] || '#888'}"></span>`
+    ).join('');
     const date = new Date(s.timestamp).toLocaleString('ko-KR', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
@@ -385,7 +399,7 @@ async function renderSidebarSessions() {
     item.innerHTML = `
       <div class="session-item-info">
         <span class="session-item-name">${s.name}</span>
-        <span class="session-item-meta">${date} · ${keys}</span>
+        <span class="session-item-meta"><span class="session-ai-dots">${dots}</span>${date}</span>
       </div>
       <button class="session-item-delete" title="삭제">&#10005;</button>
     `;
@@ -393,7 +407,6 @@ async function renderSidebarSessions() {
     item.addEventListener('click', async (e) => {
       if (e.target.closest('.session-item-delete')) return;
       await loadSession(s.id);
-      closeSidebarPanel();
     });
 
     item.querySelector('.session-item-delete').addEventListener('click', async (e) => {
@@ -470,7 +483,7 @@ async function sendMessage() {
   console.log('Send results:', results);
 
   sendBtn.disabled = false;
-  sendBtn.textContent = 'Send All';
+  updateSendButton();
   input.value = '';
   input.style.height = 'auto';
   state.selectedFiles = [];
@@ -547,6 +560,17 @@ AI_ORDER.forEach(key => {
 saveSidebarBtn.addEventListener('click', async () => {
   const session = await saveSession();
   if (session) await renderSidebarSessions();
+});
+
+// Per-panel reload buttons
+document.querySelectorAll('.panel-reload-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const key = btn.dataset.key;
+    const iframe = document.getElementById(`iframe-${key}`);
+    if (!iframe) return;
+    const { lastUrls = {} } = await chrome.storage.local.get('lastUrls');
+    iframe.src = lastUrls[key] || AI_DEFAULTS[key];
+  });
 });
 
 attachBtn.addEventListener('click', () => fileInput.click());

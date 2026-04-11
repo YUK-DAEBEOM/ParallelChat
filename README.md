@@ -1,107 +1,116 @@
-# Multi Chat — Chrome Extension
+# ParallelChat — Chrome Extension
 
-ChatGPT, Gemini, Claude를 하나의 탭에서 동시에 사용하는 크롬 익스텐션입니다.
+Chat with ChatGPT, Gemini, and Claude side by side in a single tab.
 
-![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-brightgreen)
-![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-brightgreen)](https://developer.chrome.com/docs/extensions/)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)](https://developer.chrome.com/docs/extensions/mv3/)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
+[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d97706)](https://claude.ai)
 
-## 기능
+🇰🇷 [한국어 README](./README.ko.md)
 
-- **3분할 화면** — ChatGPT / Gemini / Claude를 하나의 탭에 나란히 표시
-- **동시 전송** — 메시지 한 번 입력으로 3개 AI에 동시 전송
-- **선택 전송** — 체크박스로 원하는 AI만 골라서 전송
-- **파일 첨부** — 드래그 앤 드롭 또는 클릭으로 파일 업로드 (최대 20MB)
-- **세션 자동 저장** — 새 대화가 시작되면 자동으로 세션 저장
-- **세션 사이드바** — 오른쪽 패널에서 세션 목록 확인 및 로드
-- **패널 접기/펼치기** — 컨트롤 패널을 접으면 채팅 영역이 전체화면으로 확장
+---
 
-## 화면 구조
+## Features
+
+- **3-panel layout** — ChatGPT / Gemini / Claude displayed side by side in one tab
+- **Simultaneous send** — Type once, broadcast to all three AIs at once
+- **Selective send** — Check/uncheck AIs to target only the ones you want
+- **Per-panel reload** — Reload a single AI panel without touching the others (hover the panel header)
+- **File attachments** — Drag & drop or click to attach files (up to 20 MB each)
+- **Auto-save sessions** — Conversations are automatically saved once a new chat URL is detected
+- **Sessions sidebar** — Always-visible right panel showing your saved sessions
+- **Collapsible control bar** — Collapse the bottom bar to give chat panels more room
+
+## Layout
 
 ```
-┌──────────────┬──────────────┬──────────────┬──────────────┐
-│              │              │              │              │
-│   ChatGPT    │   Gemini     │   Claude     │   Sessions   │
-│              │              │              │   ─────────  │
-│              │              │              │   세션 목록   │
-├──────────────┴──────────────┴──────────────┤              │
-│ MULTI CHAT  [⟳ Reload] [+ New]             │              │
-│ ┌──────────────────────────────────── [⬆]┐ └──────────────┘
-│ │ 메시지 입력...                  📎 [▲]  │
-│ └────────────────────────────────────────┘
-└────────────────────────────────────────────
+┌─────────────────┬─────────────────┬─────────────────┬────────────┐
+│ ● ChatGPT    ↺  │ ● Gemini      ↺ │ ● Claude      ↺ │  Sessions  │
+│                 │                 │                 │ ─────────  │
+│    (iframe)     │    (iframe)     │    (iframe)     │  session 1 │
+│                 │                 │                 │  session 2 │
+├─────────────────┴─────────────────┴─────────────────┤  session 3 │
+│ MULTI CHAT  [↺ Reload] [+ New]   ☑GPT ☑Gem ☑Cla ▼ │            │
+│ ┌─────────────────────────────────────────────────┐  └────────────┘
+│ │ Type a message…                        📎  ↑GPT·Gem·Cla │
+│ └─────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────
 ```
 
-## 설치 방법
+## Installation
 
-1. 이 저장소를 다운로드 또는 클론
-2. Chrome 주소창에 `chrome://extensions` 입력
-3. 우측 상단 **개발자 모드** 활성화
-4. **압축해제된 확장 프로그램을 로드합니다** 클릭
-5. `multi-chat` 폴더 선택
+1. Download or clone this repository
+2. Open Chrome and go to `chrome://extensions`
+3. Enable **Developer mode** (top-right toggle)
+4. Click **Load unpacked** and select the `multi-chat` folder
 
-## 사용 방법
+## Usage
 
-1. Chrome 우측 상단 퍼즐 아이콘 → **Multi Chat** 클릭
-2. 새 탭에 ChatGPT / Gemini / Claude가 3분할로 열림
-3. 하단 입력창에 메시지 입력 후 **Enter** 또는 **Send All** 클릭
+1. Click the puzzle icon in Chrome → **ParallelChat**
+2. A new tab opens with ChatGPT, Gemini, and Claude side by side
+3. Type in the bottom bar and press **Enter** or the send button
 
-| 단축키 | 동작 |
-|--------|------|
-| `Enter` | 전송 |
-| `Shift + Enter` | 줄바꿈 |
-| `▼ / ▲` 버튼 | 컨트롤 패널 접기/펼치기 |
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Shift + Enter` | New line |
+| Hover panel header | Show per-panel reload button |
+| `▼ / ▲` button | Collapse / expand the control bar |
 
-### 세션 관리
+### Session management
 
-- 메시지를 전송하면 대화 URL이 생성된 후 **자동 저장**
-- 우측 Sessions 패널에서 저장된 세션 목록 확인
-- 세션 클릭 → 해당 대화로 이동
-- **+ 현재 세션 저장** 버튼으로 수동 저장 가능
+- Sessions are **auto-saved** once a new conversation URL is detected (~2.5 s after sending)
+- Click any session in the right sidebar to reload it
+- Use **+ 현재 세션 저장** to save manually at any time
+- Hover a session item to reveal the delete button
 
-### 파일 첨부
+### File attachments
 
-- 입력창 하단 **📎 파일** 버튼 클릭
-- 또는 창에 파일 **드래그 앤 드롭**
-- 첨부된 파일은 칩 형태로 표시, **✕** 로 개별 제거
-- 파일당 최대 20MB
+- Click the **📎 파일** button or drag & drop files onto the window
+- Attached files appear as chips; click **✕** to remove individually
+- Maximum 20 MB per file
 
-## 사전 조건
+## Prerequisites
 
-각 AI 서비스에 **미리 로그인** 되어 있어야 합니다.
+You must be **already logged in** to each AI service in your browser:
 
 - [chatgpt.com](https://chatgpt.com)
 - [gemini.google.com](https://gemini.google.com)
 - [claude.ai](https://claude.ai)
 
-## 폴더 구조
+## Project structure
 
 ```
 multi-chat/
-├── manifest.json       # 익스텐션 설정 (Manifest V3)
-├── background.js       # 탭 관리, declarativeNetRequest 설정
+├── manifest.json         # Extension config (Manifest V3)
+├── background.js         # Tab management, declarativeNetRequest rules
+├── generate-icons.js     # Node.js icon generator (dev only)
 ├── content/
-│   ├── shared.js       # 공통 유틸리티 (DOM 조작, 파일 업로드, 타이틀 조회)
-│   ├── chatgpt.js      # ChatGPT 페이지 연동
-│   ├── gemini.js       # Gemini 페이지 연동
-│   └── claude.js       # Claude 페이지 연동
+│   ├── shared.js         # Common utilities (title query, file upload)
+│   ├── chatgpt.js        # ChatGPT page integration
+│   ├── gemini.js         # Gemini page integration
+│   └── claude.js         # Claude page integration
 ├── viewer/
-│   ├── viewer.html     # 메인 뷰어 페이지
-│   ├── viewer.js       # 뷰어 로직 (프레임 관리, 세션, 전송)
-│   └── viewer.css      # 스타일
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md
+│   ├── viewer.html       # Main viewer page
+│   ├── viewer.js         # Viewer logic (frames, sessions, send)
+│   └── viewer.css        # Styles
+└── icons/
+    ├── icon16.png
+    ├── icon48.png
+    └── icon128.png
 ```
 
-## 알려진 제한사항
+## Known limitations
 
-- 각 AI 사이트의 DOM 구조가 업데이트되면 content script의 셀렉터 수정이 필요할 수 있습니다
-- 사이트 로딩이 느릴 경우 첫 전송이 실패할 수 있습니다 (재전송하면 됩니다)
-- 파일 업로드는 각 사이트의 파일 입력 방식에 따라 동작이 다를 수 있습니다
+- If an AI site updates its DOM structure, selector updates in the relevant content script may be needed
+- On slow connections, the first send after page load may fail — just try again
+- File upload behavior varies by site
 
-## 라이선스
+## Built with
 
-MIT
+This extension was built with the help of [Claude](https://claude.ai) (Anthropic).
+
+## License
+
+MIT — see [LICENSE](./LICENSE)

@@ -70,6 +70,36 @@ html, body {
   color: #6666aa;
   letter-spacing: 0.8px;
   text-transform: uppercase;
+  flex: 1;
+}
+
+.panel-reload-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: #44446a;
+  border-radius: 5px;
+  width: 22px;
+  height: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.panel-header:hover .panel-reload-btn {
+  opacity: 1;
+}
+
+.panel-reload-btn:hover {
+  color: #aaa8ff;
+  border-color: #3a3a5a;
+  background: rgba(108, 99, 255, 0.12);
 }
 
 .panel iframe {
@@ -450,9 +480,24 @@ button {
 }
 
 .session-item-meta {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   color: #44446a;
+}
+
+.session-ai-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.session-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .session-item-delete {
