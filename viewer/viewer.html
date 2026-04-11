@@ -7,6 +7,7 @@
 </head>
 <body>
   <div class="drag-overlay">파일을 여기에 놓으세요</div>
+  <div class="iframe-shield"></div>
 
   <!-- Main area: panels + always-visible sessions sidebar -->
   <div class="main-area">
@@ -30,6 +31,7 @@
         </div>
         <iframe id="iframe-chatgpt" src="https://chatgpt.com/" title="ChatGPT"></iframe>
       </div>
+      <div class="panel-divider" data-left="chatgpt" data-right="gemini"></div>
       <div class="panel" id="panel-gemini">
         <div class="panel-header">
           <span class="panel-dot gemini"></span>
@@ -38,6 +40,7 @@
         </div>
         <iframe id="iframe-gemini" src="https://gemini.google.com/app" title="Gemini"></iframe>
       </div>
+      <div class="panel-divider" data-left="gemini" data-right="claude"></div>
       <div class="panel" id="panel-claude">
         <div class="panel-header">
           <span class="panel-dot claude"></span>

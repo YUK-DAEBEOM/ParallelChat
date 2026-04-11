@@ -595,6 +595,53 @@ document.addEventListener('drop', (e) => {
   if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
 });
 
+// ===== Panel resize =====
+
+(function initResize() {
+  let drag = null;
+
+  document.querySelectorAll('.panel-divider').forEach(divider => {
+    divider.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const leftKey  = divider.dataset.left;
+      const rightKey = divider.dataset.right;
+      const leftPanel  = document.getElementById(`panel-${leftKey}`);
+      const rightPanel = document.getElementById(`panel-${rightKey}`);
+      if (!leftPanel || !rightPanel) return;
+
+      // Skip if either adjacent panel is disabled (collapsed)
+      if (leftPanel.classList.contains('disabled') || rightPanel.classList.contains('disabled')) return;
+
+      drag = {
+        divider,
+        leftPanel, rightPanel,
+        startX: e.clientX,
+        startLeftW:  leftPanel.offsetWidth,
+        startRightW: rightPanel.offsetWidth,
+      };
+
+      divider.classList.add('dragging');
+      document.body.classList.add('resizing');
+    });
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const delta = e.clientX - drag.startX;
+    const newLeft  = Math.max(120, drag.startLeftW  + delta);
+    const newRight = Math.max(120, drag.startRightW - delta);
+    drag.leftPanel.style.flex  = `0 0 ${newLeft}px`;
+    drag.rightPanel.style.flex = `0 0 ${newRight}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!drag) return;
+    drag.divider.classList.remove('dragging');
+    document.body.classList.remove('resizing');
+    drag = null;
+  });
+})();
+
 // ===== Start =====
 
 init();

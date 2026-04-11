@@ -27,14 +27,50 @@ html, body {
 }
 
 .panel {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 120px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #d8d8e8;
 }
 
-.panel:last-child { border-right: none; }
+/* Resize divider between panels */
+.panel-divider {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: #e8e8f4;
+  position: relative;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.panel-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 36px;
+  background: #c8c8e0;
+  border-radius: 2px;
+  transition: background 0.15s, height 0.15s;
+}
+
+.panel-divider:hover { background: #d8d4ff; }
+.panel-divider:hover::after { background: #6c63ff; height: 48px; }
+.panel-divider.dragging { background: #c8c0ff; }
+.panel-divider.dragging::after { background: #5a52e8; height: 48px; }
+
+/* Iframe drag shield — prevents iframe from eating mouse events during resize */
+.iframe-shield {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  cursor: col-resize;
+}
+body.resizing .iframe-shield { display: block; }
 
 /* Disabled panel: collapses to thin clickable strip */
 .panel.disabled {
