@@ -35,7 +35,6 @@ async function init() {
   // Also discover existing iframe frames via webNavigation API (most reliable)
   await discoverFrames();
 
-  loadCheckboxState();
   updatePanelVisibility();
   await loadSessions();
   setupWebNavigation();
@@ -181,7 +180,7 @@ function updatePanelVisibility() {
   for (const key of AI_ORDER) {
     const panel = document.getElementById(`panel-${key}`);
     if (!panel) continue;
-    panel.classList.toggle('hidden', !state.activeKeys.includes(key));
+    panel.classList.toggle('disabled', !state.activeKeys.includes(key));
   }
   updateSendButton();
 }
@@ -198,12 +197,6 @@ function updateSendButton() {
   }
 }
 
-function loadCheckboxState() {
-  for (const key of AI_ORDER) {
-    const cb = document.getElementById(`chk-${key}`);
-    if (cb) cb.checked = state.activeKeys.includes(key);
-  }
-}
 
 // ===== Collapse/expand =====
 
@@ -546,13 +539,20 @@ toggleBtn.addEventListener('click', toggleCollapse);
 relaunchBtn.addEventListener('click', () => reloadIframes(false));
 newSessionBtn.addEventListener('click', () => reloadIframes(true));
 
+// Panel header click = toggle that AI on/off
 AI_ORDER.forEach(key => {
-  const cb = document.getElementById(`chk-${key}`);
-  if (!cb) return;
-  cb.addEventListener('change', () => {
-    const active = AI_ORDER.filter(k => document.getElementById(`chk-${k}`)?.checked);
-    if (active.length === 0) { cb.checked = true; return; }
-    state.activeKeys = active;
+  const header = document.querySelector(`#panel-${key} .panel-header`);
+  if (!header) return;
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.panel-reload-btn')) return;
+    const isActive = state.activeKeys.includes(key);
+    if (isActive && state.activeKeys.length === 1) return; // 최소 1개는 유지
+    if (isActive) {
+      state.activeKeys = state.activeKeys.filter(k => k !== key);
+    } else {
+      state.activeKeys = [...state.activeKeys, key]
+        .sort((a, b) => AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b));
+    }
     updatePanelVisibility();
   });
 });
