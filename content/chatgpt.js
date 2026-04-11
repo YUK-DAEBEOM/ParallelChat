@@ -1,6 +1,20 @@
 // ChatGPT content script (shared.js loaded first)
 registerFrame('chatgpt');
 
+// Force dark mode — ChatGPT uses Tailwind class="dark" on <html>
+(function forceDarkMode() {
+  const html = document.documentElement;
+  html.classList.add('dark');
+  html.setAttribute('data-theme', 'dark');
+  html.style.colorScheme = 'dark';
+  try { localStorage.setItem('theme', 'dark'); } catch (_) {}
+  // Keep it dark if the page tries to revert
+  new MutationObserver(() => {
+    if (!html.classList.contains('dark')) html.classList.add('dark');
+    if (html.getAttribute('data-theme') !== 'dark') html.setAttribute('data-theme', 'dark');
+  }).observe(html, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+})();
+
 // Suppress ChatGPT's own sidebar — prevents layout shifts when typing in iframe
 (function injectSidebarSuppressor() {
   const style = document.createElement('style');

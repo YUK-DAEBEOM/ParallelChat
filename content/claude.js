@@ -1,6 +1,17 @@
 // Claude content script (shared.js loaded first)
 registerFrame('claude');
 
+// Force dark mode — Claude uses Tailwind class="dark" on <html>
+(function forceDarkMode() {
+  const html = document.documentElement;
+  html.classList.add('dark');
+  html.style.colorScheme = 'dark';
+  try { localStorage.setItem('theme', 'dark'); } catch (_) {}
+  new MutationObserver(() => {
+    if (!html.classList.contains('dark')) html.classList.add('dark');
+  }).observe(html, { attributes: true, attributeFilter: ['class'] });
+})();
+
 const INPUT_SELECTORS = [
   'div.ProseMirror[contenteditable="true"]',
   'fieldset div[contenteditable="true"]',
