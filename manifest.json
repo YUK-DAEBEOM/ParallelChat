@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Multi Chat",
+  "name": "Parallel Chat",
   "version": "2.0.0",
-  "description": "Chat with ChatGPT, Gemini, and Claude simultaneously in one window",
+  "description": "Send one message to ChatGPT, Gemini, and Claude at the same time. Compare AI answers side-by-side in a single tab.",
   "permissions": [
     "storage",
     "tabs",
@@ -21,10 +21,19 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Open Multi Chat",
+    "default_title": "Open Parallel Chat",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+M",
+        "mac": "Command+Shift+M"
+      },
+      "description": "Open Parallel Chat"
     }
   },
   "background": {

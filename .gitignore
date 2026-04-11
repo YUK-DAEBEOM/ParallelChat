@@ -20,3 +20,8 @@ node_modules/
 .claude/
 CLAUDE.md
 docs/
+
+# ===== 배포 관련 (로컬 전용) =====
+dist/
+store-listing.md
+build.js
