@@ -377,17 +377,34 @@ function updatePanelVisibility() {
     const panel = document.getElementById(`panel-${key}`);
     if (!panel) continue;
     panel.classList.toggle('disabled', !state.activeKeys.includes(key));
+
+    // 상단 토글 버튼 active 상태 동기화
+    const toggleBtn = document.getElementById(`toggle-${key}`);
+    if (toggleBtn) toggleBtn.classList.toggle('active', state.activeKeys.includes(key));
   }
 
-  // 양쪽 패널이 모두 비활성일 때만 divider 숨김
+  // 인접 패널 중 하나라도 비활성이면 divider 숨김 (disabled 패널이 자체 border로 구분)
   document.querySelectorAll('.panel-divider').forEach(divider => {
     const leftActive  = state.activeKeys.includes(divider.dataset.left);
     const rightActive = state.activeKeys.includes(divider.dataset.right);
-    divider.classList.toggle('hidden', !leftActive && !rightActive);
+    divider.classList.toggle('hidden', !leftActive || !rightActive);
   });
 
   updatePanelToggleHints();
   updateSendButton();
+}
+
+function togglePanel(key) {
+  const isActive = state.activeKeys.includes(key);
+  if (isActive && state.activeKeys.length === 1) return; // 최소 1개 유지
+  if (isActive) {
+    state.activeKeys = state.activeKeys.filter(k => k !== key);
+  } else {
+    state.activeKeys = [...state.activeKeys, key]
+      .sort((a, b) => AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b));
+  }
+  updatePanelVisibility();
+  chrome.storage.local.set({ activeKeys: state.activeKeys });
 }
 
 function updatePanelToggleHints() {
@@ -846,17 +863,12 @@ AI_ORDER.forEach(key => {
   if (!header) return;
   header.addEventListener('click', (e) => {
     if (e.target.closest('.panel-reload-btn')) return;
-    const isActive = state.activeKeys.includes(key);
-    if (isActive && state.activeKeys.length === 1) return; // 최소 1개는 유지
-    if (isActive) {
-      state.activeKeys = state.activeKeys.filter(k => k !== key);
-    } else {
-      state.activeKeys = [...state.activeKeys, key]
-        .sort((a, b) => AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b));
-    }
-    updatePanelVisibility();
-    chrome.storage.local.set({ activeKeys: state.activeKeys });
+    togglePanel(key);
   });
+
+  // 상단 토글 버튼 클릭
+  const topToggleBtn = document.getElementById(`toggle-${key}`);
+  if (topToggleBtn) topToggleBtn.addEventListener('click', () => togglePanel(key));
 });
 
 // ===== Language toggle =====

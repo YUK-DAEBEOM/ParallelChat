@@ -2,11 +2,10 @@
 registerFrame('chatgpt');
 
 
-// Suppress ChatGPT's own sidebar — prevents layout shifts when typing in iframe
+// Prevent layout shifts when typing in iframe (keep sidebar visible)
 (function injectSidebarSuppressor() {
   const style = document.createElement('style');
   style.textContent = `
-    nav { display: none !important; }
     main, [role="main"], .main-content {
       margin-left: 0 !important;
       padding-left: 0 !important;

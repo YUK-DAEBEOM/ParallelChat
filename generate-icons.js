@@ -101,24 +101,23 @@ function coverage(d, aa = 1.0) { return clamp01((aa - d) / aa); }
 
 // ───── Pixel canvas ──────────────────────────────────────────────────────────
 
-function createCanvas(w, h, bgHex = '#0d0d1a') {
-  const px = new Uint8Array(w * h * 4);
-  const bg = hex(bgHex);
-  for (let i = 0; i < w * h; i++) {
-    px[i*4]   = bg[0];
-    px[i*4+1] = bg[1];
-    px[i*4+2] = bg[2];
-    px[i*4+3] = 255;
-  }
-  return px;
+function createCanvas(w, h) {
+  // All zeros = fully transparent
+  return new Uint8Array(w * h * 4);
 }
 
 function setPixel(px, w, x, y, rgb, alpha) {
   if (x < 0 || y < 0 || x >= w) return;
   const i = (y * w + x) * 4;
-  const bg = [px[i], px[i+1], px[i+2]];
-  const c = over(bg, rgb, alpha);
-  px[i] = c[0]; px[i+1] = c[1]; px[i+2] = c[2]; px[i+3] = 255;
+  // Straight-alpha Porter-Duff "over" compositing
+  const dstA = px[i + 3] / 255;
+  const srcA = alpha;
+  const outA = srcA + dstA * (1 - srcA);
+  if (outA < 0.001) return;
+  px[i]     = Math.round((rgb[0] * srcA + px[i]     * dstA * (1 - srcA)) / outA);
+  px[i + 1] = Math.round((rgb[1] * srcA + px[i + 1] * dstA * (1 - srcA)) / outA);
+  px[i + 2] = Math.round((rgb[2] * srcA + px[i + 2] * dstA * (1 - srcA)) / outA);
+  px[i + 3] = Math.round(outA * 255);
 }
 
 // ───── Drawing primitives ────────────────────────────────────────────────────
@@ -220,29 +219,80 @@ function drawChatBubble(pxBuf, W, H, { cx, cy, bw, bh, r, tailSide, color, glowP
   drawBubbleLines(pxBuf, W, cx, cy, bw, bh, color);
 }
 
-// ───── Icon designs by size ──────────────────────────────────────────────────
+// ───── Pig character ──────────────────────────────────────────────────────────
 
-const COLORS = {
-  gpt:    '#10a37f',
-  gemini: '#4285f4',
-  claude: '#d97706',
-};
+const PIG_PINK      = '#ffaab8';
+const PIG_INNER_EAR = '#ff7a90';
+const PIG_SNOUT     = '#ff8fa0';
+const PIG_NOSTRIL   = '#cc4a60';
+const PIG_EYE       = '#1a0a10';
+const PIG_SHINE     = '#ffffff';
+const BUBBLE_COLOR  = '#6c63ff';
+
+// SDF: axis-aligned ellipse (approximate, good enough for AA rendering)
+function sdEllipse(px, py, cx, cy, rx, ry) {
+  const dx = (px - cx) / rx;
+  const dy = (py - cy) / ry;
+  return (Math.hypot(dx, dy) - 1.0) * Math.min(rx, ry);
+}
+
+function drawPigFace(buf, W, H, cx, cy, r) {
+  const earOffX = r * 0.72;
+  const earOffY = r * 0.72;
+  const earCy   = cy - earOffY;
+  const earR    = r * 0.44;
+  const innerR  = earR * 0.55;
+
+  // Ears — drawn first so head overlaps base
+  for (const ecx of [cx - earOffX, cx + earOffX]) {
+    drawGlow(buf, W, H, (px, py) => sdCircle(px, py, ecx, earCy, earR), PIG_PINK, earR * 0.5, 0.28);
+    drawShape(buf, W, H, (px, py) => sdCircle(px, py, ecx, earCy, earR), PIG_PINK);
+    drawShape(buf, W, H, (px, py) => sdCircle(px, py, ecx, earCy, innerR), PIG_INNER_EAR, 0.85);
+  }
+
+  // Head
+  drawGlow(buf, W, H, (px, py) => sdCircle(px, py, cx, cy, r), PIG_PINK, r * 0.4, 0.32);
+  drawShape(buf, W, H, (px, py) => sdCircle(px, py, cx, cy, r), PIG_PINK);
+
+  // Eyes (skip if too small)
+  if (r >= 6) {
+    const eyeY = cy - r * 0.14;
+    const eyeR = Math.max(1.0, r * 0.115);
+    const eyeX = r * 0.30;
+    for (const ex of [cx - eyeX, cx + eyeX]) {
+      drawShape(buf, W, H, (px, py) => sdCircle(px, py, ex, eyeY, eyeR), PIG_EYE);
+      if (r >= 12) {
+        // Shine dot
+        drawShape(buf, W, H, (px, py) =>
+          sdCircle(px, py, ex + eyeR * 0.35, eyeY - eyeR * 0.35, eyeR * 0.38), PIG_SHINE);
+      }
+    }
+  }
+
+  // Snout (ellipse)
+  const snoutCy = cy + r * 0.27;
+  const snoutRx = r * 0.37;
+  const snoutRy = r * 0.26;
+  drawShape(buf, W, H, (px, py) => sdEllipse(px, py, cx, snoutCy, snoutRx, snoutRy), PIG_SNOUT, 0.9);
+
+  // Nostrils
+  if (r >= 10) {
+    const nR = Math.max(0.8, r * 0.075);
+    const nX = r * 0.14;
+    for (const nx of [cx - nX, cx + nX]) {
+      drawShape(buf, W, H, (px, py) => sdCircle(px, py, nx, snoutCy, nR), PIG_NOSTRIL);
+    }
+  }
+}
+
+// ───── Icon designs by size ──────────────────────────────────────────────────
 
 function generateIcon16() {
   const W = 16, H = 16;
   const px = createCanvas(W, H);
 
-  // Three colored dots with glows
-  const dots = [
-    { cx: 3.5,  cy: 8, r: 2.6, color: COLORS.gpt    },
-    { cx: 8.5,  cy: 8, r: 2.6, color: COLORS.gemini  },
-    { cx: 13.5, cy: 8, r: 2.6, color: COLORS.claude  },
-  ];
-
-  for (const { cx, cy, r, color } of dots) {
-    drawGlow(px, W, H, (x, y) => sdCircle(x, y, cx, cy, r), color, 4, 0.4);
-    drawShape(px, W, H, (x, y) => sdCircle(x, y, cx, cy, r), color, 0.95);
-  }
+  // Pig face only — centered
+  drawPigFace(px, W, H, 8, 9.5, 6.2);
 
   return makePNG(W, H, px);
 }
@@ -251,16 +301,14 @@ function generateIcon48() {
   const W = 48, H = 48;
   const px = createCanvas(W, H);
 
-  const bw = 18, bh = 15, r = 4, glowPx = 8;
+  // Pig face (left side)
+  drawPigFace(px, W, H, 16, 30, 12);
 
-  // Staggered vertical chat layout
-  const bubbles = [
-    { cx: 15, cy: 12.5, bw, bh, r, tailSide: 'left',  color: COLORS.gpt,    glowPx },
-    { cx: 29, cy: 25,   bw, bh, r, tailSide: 'right', color: COLORS.claude,  glowPx },
-    { cx: 15, cy: 37.5, bw, bh, r, tailSide: 'left',  color: COLORS.gemini,  glowPx },
-  ];
-
-  for (const b of bubbles) drawChatBubble(px, W, H, b);
+  // Chat bubble (upper right, speech from pig)
+  drawChatBubble(px, W, H, {
+    cx: 36, cy: 14, bw: 20, bh: 14,
+    r: 4, tailSide: 'left', color: BUBBLE_COLOR, glowPx: 7,
+  });
 
   return makePNG(W, H, px);
 }
@@ -269,15 +317,14 @@ function generateIcon128() {
   const W = 128, H = 128;
   const px = createCanvas(W, H);
 
-  const bw = 48, bh = 36, r = 11, glowPx = 18;
+  // Pig face (left-center)
+  drawPigFace(px, W, H, 40, 78, 30);
 
-  const bubbles = [
-    { cx: 38,  cy: 32,  bw, bh, r, tailSide: 'left',  color: COLORS.gpt,    glowPx },
-    { cx: 88,  cy: 64,  bw, bh, r, tailSide: 'right', color: COLORS.claude,  glowPx },
-    { cx: 38,  cy: 96,  bw, bh, r, tailSide: 'left',  color: COLORS.gemini,  glowPx },
-  ];
-
-  for (const b of bubbles) drawChatBubble(px, W, H, b);
+  // Chat bubble (upper right, speech from pig)
+  drawChatBubble(px, W, H, {
+    cx: 96, cy: 38, bw: 48, bh: 34,
+    r: 10, tailSide: 'left', color: BUBBLE_COLOR, glowPx: 16,
+  });
 
   return makePNG(W, H, px);
 }
