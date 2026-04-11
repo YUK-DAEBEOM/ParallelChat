@@ -101,7 +101,7 @@ function coverage(d, aa = 1.0) { return clamp01((aa - d) / aa); }
 
 // ───── Pixel canvas ──────────────────────────────────────────────────────────
 
-function createCanvas(w, h, bgHex = '#0d0d1a') {
+function createCanvas(w, h, bgHex = '#ffffff') {
   const px = new Uint8Array(w * h * 4);
   const bg = hex(bgHex);
   for (let i = 0; i < w * h; i++) {
