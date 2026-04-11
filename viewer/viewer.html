@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi Chat</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <div class="drag-overlay">파일을 여기에 놓으세요</div>
+
+  <!-- Main area: panels + always-visible sessions sidebar -->
+  <div class="main-area">
+
+    <!-- AI iframe panels -->
+    <div id="panels-container">
+      <div class="panel" id="panel-chatgpt">
+        <div class="panel-header">
+          <span class="panel-dot gpt"></span>
+          <span class="panel-name">ChatGPT</span>
+        </div>
+        <iframe id="iframe-chatgpt" src="https://chatgpt.com/" title="ChatGPT"></iframe>
+      </div>
+      <div class="panel" id="panel-gemini">
+        <div class="panel-header">
+          <span class="panel-dot gemini"></span>
+          <span class="panel-name">Gemini</span>
+        </div>
+        <iframe id="iframe-gemini" src="https://gemini.google.com/app" title="Gemini"></iframe>
+      </div>
+      <div class="panel" id="panel-claude">
+        <div class="panel-header">
+          <span class="panel-dot claude"></span>
+          <span class="panel-name">Claude</span>
+        </div>
+        <iframe id="iframe-claude" src="https://claude.ai/" title="Claude"></iframe>
+      </div>
+    </div>
+
+    <!-- Sessions sidebar (always visible) -->
+    <div id="sessions-sidebar" class="sessions-sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Sessions</span>
+      </div>
+      <button id="saveSidebarBtn" class="sidebar-save-btn">&#43; 현재 세션 저장</button>
+      <div id="sessionsList" class="sessions-list"></div>
+    </div>
+
+  </div>
+
+  <!-- Integrated control panel -->
+  <div id="control-panel">
+
+    <!-- Always-visible top bar -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <span class="title">MULTI CHAT</span>
+      </div>
+      <div class="top-bar-right">
+        <button class="icon-btn" id="relaunchBtn" title="현재 URL 유지 리로드">&#8635; Reload</button>
+        <button class="icon-btn danger" id="newSessionBtn" title="새 세션 (초기화)">&#43; New</button>
+        <div class="top-bar-divider"></div>
+        <div class="badges">
+          <label class="badge">
+            <input type="checkbox" id="chk-chatgpt" checked>
+            <span class="dot gpt"></span> GPT
+          </label>
+          <label class="badge">
+            <input type="checkbox" id="chk-gemini" checked>
+            <span class="dot gemini"></span> Gemini
+          </label>
+          <label class="badge">
+            <input type="checkbox" id="chk-claude" checked>
+            <span class="dot claude"></span> Claude
+          </label>
+        </div>
+        <button class="toggle-btn" id="toggleBtn" title="접기 / 펼치기">&#9660;</button>
+      </div>
+    </div>
+
+    <!-- Collapsible main content -->
+    <div class="main-content" id="mainContent">
+      <div class="input-container">
+        <div class="file-list" id="fileList"></div>
+        <textarea id="input" placeholder="메시지를 입력하면 선택된 AI에 동시 전송됩니다..." rows="1"></textarea>
+        <div class="input-footer">
+          <button class="file-attach-btn" id="attachBtn" title="파일 첨부">&#128206; 파일</button>
+          <input type="file" id="fileInput" multiple>
+          <span id="sendFeedback"></span>
+          <span class="hint">Enter = 전송 &middot; Shift+Enter = 줄바꿈</span>
+          <button class="send-btn" id="sendBtn">&#9650;&nbsp;Send All</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="viewer.js"></script>
+</body>
+</html>
