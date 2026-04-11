@@ -27,9 +27,17 @@ ChatGPT, Gemini, Claude를 하나의 탭에서 나란히 사용하는 크롬 익
 
 ## 스크린샷
 
-![ParallelChat UI](./img/ui.JPG)
+**3분할 화면 — ChatGPT, Gemini, Claude 나란히**
+![초기 화면](./img/1.JPG)
 
-> 세션 사이드바(좌) · ChatGPT / Gemini / Claude 패널 · MULTI CHAT 컨트롤바(하단)
+**메시지 한 번으로 3개 AI에 동시 전송**
+![전송 중](./img/2.JPG)
+
+**3개 AI의 답변을 한눈에 비교**
+![응답 결과](./img/3.JPG)
+
+**각 AI의 답변 상세 확인**
+![답변 상세](./img/4.JPG)
 
 ## 설치 방법
 
