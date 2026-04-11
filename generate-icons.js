@@ -101,24 +101,23 @@ function coverage(d, aa = 1.0) { return clamp01((aa - d) / aa); }
 
 // ───── Pixel canvas ──────────────────────────────────────────────────────────
 
-function createCanvas(w, h, bgHex = '#ffffff') {
-  const px = new Uint8Array(w * h * 4);
-  const bg = hex(bgHex);
-  for (let i = 0; i < w * h; i++) {
-    px[i*4]   = bg[0];
-    px[i*4+1] = bg[1];
-    px[i*4+2] = bg[2];
-    px[i*4+3] = 255;
-  }
-  return px;
+function createCanvas(w, h) {
+  // All zeros = fully transparent
+  return new Uint8Array(w * h * 4);
 }
 
 function setPixel(px, w, x, y, rgb, alpha) {
   if (x < 0 || y < 0 || x >= w) return;
   const i = (y * w + x) * 4;
-  const bg = [px[i], px[i+1], px[i+2]];
-  const c = over(bg, rgb, alpha);
-  px[i] = c[0]; px[i+1] = c[1]; px[i+2] = c[2]; px[i+3] = 255;
+  // Straight-alpha Porter-Duff "over" compositing
+  const dstA = px[i + 3] / 255;
+  const srcA = alpha;
+  const outA = srcA + dstA * (1 - srcA);
+  if (outA < 0.001) return;
+  px[i]     = Math.round((rgb[0] * srcA + px[i]     * dstA * (1 - srcA)) / outA);
+  px[i + 1] = Math.round((rgb[1] * srcA + px[i + 1] * dstA * (1 - srcA)) / outA);
+  px[i + 2] = Math.round((rgb[2] * srcA + px[i + 2] * dstA * (1 - srcA)) / outA);
+  px[i + 3] = Math.round(outA * 255);
 }
 
 // ───── Drawing primitives ────────────────────────────────────────────────────
