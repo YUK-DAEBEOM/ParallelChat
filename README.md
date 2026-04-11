@@ -15,27 +15,40 @@ Chat with ChatGPT, Gemini, and Claude side by side in a single tab.
 
 - **3-panel layout** — ChatGPT / Gemini / Claude displayed side by side in one tab
 - **Simultaneous send** — Type once, broadcast to all three AIs at once
-- **Selective send** — Check/uncheck AIs to target only the ones you want
-- **Per-panel reload** — Reload a single AI panel without touching the others (hover the panel header)
+- **Panel toggle** — Click a panel header to enable/disable that AI (minimum one always active)
+- **Horizontal resize** — Drag the divider between panels to adjust widths
+- **Vertical resize** — Drag the handle above the input bar to make it taller or shorter
+- **Per-panel reload** — Hover a panel header to reveal its individual reload button
 - **File attachments** — Drag & drop or click to attach files (up to 20 MB each)
+- **Light / Dark theme** — Toggle switches both the extension UI and all three AI services at once
 - **Auto-save sessions** — Conversations are automatically saved once a new chat URL is detected
-- **Sessions sidebar** — Always-visible right panel showing your saved sessions
+- **Sessions sidebar** — Always-visible left panel showing your saved sessions
 - **Collapsible control bar** — Collapse the bottom bar to give chat panels more room
+
+## Screenshot
+
+![ParallelChat UI](./img/ui.JPG)
+
+> Sessions sidebar (left) · ChatGPT / Gemini / Claude panels · MULTI CHAT control bar (bottom)
 
 ## Layout
 
 ```
-┌─────────────────┬─────────────────┬─────────────────┬────────────┐
-│ ● ChatGPT    ↺  │ ● Gemini      ↺ │ ● Claude      ↺ │  Sessions  │
-│                 │                 │                 │ ─────────  │
-│    (iframe)     │    (iframe)     │    (iframe)     │  session 1 │
-│                 │                 │                 │  session 2 │
-├─────────────────┴─────────────────┴─────────────────┤  session 3 │
-│ MULTI CHAT  [↺ Reload] [+ New]   ☑GPT ☑Gem ☑Cla ▼ │            │
-│ ┌─────────────────────────────────────────────────┐  └────────────┘
-│ │ Type a message…                        📎  ↑GPT·Gem·Cla │
-│ └─────────────────────────────────────────────────┘
-└───────────────────────────────────────────────────────
+┌────────────┬──────────────────┬──────────────────┬──────────────────┐
+│  Sessions  │ ● ChatGPT      ↺ │ ● Gemini       ↺ │ ● Claude       ↺ │
+│ ─────────  │                  │                  │                  │
+│  session 1 │    (iframe)      │    (iframe)      │    (iframe)      │
+│  session 2 │                  │                  │                  │
+│  session 3 │                  ╎                  ╎                  │
+└────────────┴──────────────────┴──────────────────┴──────────────────┘
+                            ──── resize ────
+┌──────────────────────────────────────────────────────────────────────┐
+│ MULTI CHAT      [↺ Reload]  [+ New]  [☀️ Light]                  ▼  │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │ Type a message…                                                  │ │
+│ │                                                          📎  ↑ Send All │
+│ └──────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Installation
@@ -51,24 +64,29 @@ Chat with ChatGPT, Gemini, and Claude side by side in a single tab.
 2. A new tab opens with ChatGPT, Gemini, and Claude side by side
 3. Type in the bottom bar and press **Enter** or the send button
 
-| Shortcut | Action |
-|----------|--------|
-| `Enter` | Send message |
-| `Shift + Enter` | New line |
-| Hover panel header | Show per-panel reload button |
-| `▼ / ▲` button | Collapse / expand the control bar |
+| Action | How |
+|--------|-----|
+| Send message | `Enter` |
+| New line | `Shift + Enter` |
+| Enable / disable an AI | Click its panel header |
+| Resize panel widths | Drag the vertical divider between panels |
+| Resize input bar height | Drag the horizontal handle above the input bar |
+| Per-panel reload | Hover panel header → click `↺` |
+| Collapse / expand input bar | `▼ / ▲` button |
+| Toggle light / dark theme | `☀️ Light` / `🌙 Dark` button |
 
 ### Session management
 
 - Sessions are **auto-saved** once a new conversation URL is detected (~2.5 s after sending)
-- Click any session in the right sidebar to reload it
+- Click any session in the left sidebar to reload it
 - Use **+ 현재 세션 저장** to save manually at any time
 - Hover a session item to reveal the delete button
 
 ### File attachments
 
-- Click the **📎 파일** button or drag & drop files onto the window
+- Click the **📎 파일** button or drag & drop files anywhere on the window
 - Attached files appear as chips; click **✕** to remove individually
+- Files are sent together with your next message
 - Maximum 20 MB per file
 
 ## Prerequisites

@@ -200,13 +200,13 @@ function updateSendButton() {
 
 // ===== Collapse/expand =====
 
-let controlHeight = 220; // px, user-adjustable
+let controlHeight = 130; // px, user-adjustable
 
 function toggleCollapse() {
   state.collapsed = !state.collapsed;
   const cp = document.getElementById('control-panel');
   cp.classList.toggle('collapsed', state.collapsed);
-  if (!state.collapsed) cp.style.maxHeight = controlHeight + 'px';
+  if (!state.collapsed) cp.style.height = controlHeight + 'px';
   toggleBtn.innerHTML = state.collapsed ? '&#9650;' : '&#9660;';
 }
 
@@ -218,7 +218,7 @@ function toggleCollapse() {
   if (!resizer || !cp) return;
 
   // Set initial height
-  cp.style.maxHeight = controlHeight + 'px';
+  cp.style.height = controlHeight + 'px';
 
   let drag = null;
 
@@ -234,7 +234,7 @@ function toggleCollapse() {
     if (!drag) return;
     const delta  = drag.startY - e.clientY; // drag up = taller
     controlHeight = Math.max(60, Math.min(500, drag.startH + delta));
-    cp.style.maxHeight = controlHeight + 'px';
+    cp.style.height = controlHeight + 'px';
   });
 
   document.addEventListener('mouseup', () => {
@@ -516,7 +516,6 @@ async function sendMessage() {
   sendBtn.disabled = false;
   updateSendButton();
   input.value = '';
-  input.style.height = 'auto';
   state.selectedFiles = [];
   renderFileList();
   showSendFeedback(results);
@@ -568,11 +567,7 @@ input.addEventListener('keydown', (e) => {
   }
 });
 
-// Auto-grow textarea (1 line min, 4 lines max)
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 96) + 'px';
-});
+// textarea는 flex: 1 로 컨테이너를 채우므로 auto-grow 불필요
 
 toggleBtn.addEventListener('click', toggleCollapse);
 relaunchBtn.addEventListener('click', () => reloadIframes(false));
