@@ -112,6 +112,7 @@ multi-chat/
 - If an AI site updates its DOM structure, selector updates in the relevant content script may be needed
 - On slow connections, the first send after page load may fail — just try again
 - File upload behavior varies by site
+- Claude may open in incognito mode (temporary chat, no history saved) — this is an intentional Anthropic security policy for cross-origin iframe embedding and cannot be bypassed
 
 ## Built with
 

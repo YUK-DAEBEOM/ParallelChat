@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — Parallel Chat</title>
+  <title>Privacy Policy - Parallel Chat</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -36,7 +36,7 @@
 <body>
 
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Parallel Chat Chrome Extension &mdash; Last updated: April 11, 2026</p>
+  <p class="subtitle">Parallel Chat Chrome Extension - Last updated: April 17, 2026</p>
 
   <h2>Overview</h2>
   <p>
@@ -53,13 +53,12 @@
   <h2>Data We Store Locally</h2>
   <p>The extension stores the following data in your browser using <code>chrome.storage.local</code>:</p>
   <ul>
-    <li><strong>Session URLs</strong> — the conversation URLs from each AI service, so you can resume sessions later.</li>
-    <li><strong>Session names</strong> — names you assign to saved sessions.</li>
-    <li><strong>UI preferences</strong> — your selected language (KO/EN), color theme (light/dark), panel layout, and control panel height.</li>
-    <li><strong>Onboarding status</strong> — whether you have dismissed the first-run guide.</li>
+    <li><strong>Session URLs</strong> - the conversation URLs from each AI service, so you can resume sessions later.</li>
+    <li><strong>Session names</strong> - names you assign to saved sessions.</li>
+    <li><strong>UI preferences</strong> - your selected language, theme, panel order, active panels, and control panel height.</li>
   </ul>
 
-  <h2>Data We Do NOT Collect</h2>
+  <h2>Data We Do Not Collect</h2>
   <ul>
     <li>Your chat messages or conversation content</li>
     <li>Your login credentials for any AI service</li>
@@ -72,29 +71,29 @@
     Parallel Chat loads the following third-party websites inside iframes to provide its functionality:
   </p>
   <ul>
-    <li>ChatGPT — <a href="https://chatgpt.com" target="_blank">chatgpt.com</a> (OpenAI)</li>
-    <li>Gemini — <a href="https://gemini.google.com" target="_blank">gemini.google.com</a> (Google)</li>
-    <li>Claude — <a href="https://claude.ai" target="_blank">claude.ai</a> (Anthropic)</li>
+    <li>ChatGPT - <a href="https://chatgpt.com" target="_blank" rel="noreferrer">chatgpt.com</a> (OpenAI)</li>
+    <li>Gemini - <a href="https://gemini.google.com" target="_blank" rel="noreferrer">gemini.google.com</a> (Google)</li>
+    <li>Claude - <a href="https://claude.ai" target="_blank" rel="noreferrer">claude.ai</a> (Anthropic)</li>
   </ul>
   <p>
     Each service is governed by its own privacy policy. This extension does not
-    intercept or modify any data exchanged between you and these services,
-    other than temporarily removing HTTP response headers that would otherwise
-    block iframe embedding.
+    intercept or transmit your chat data. It only removes iframe-blocking response
+    headers from the AI pages loaded by the extension and the nested authentication
+    or cookie-refresh subframes those pages require.
   </p>
 
   <h2>Permissions Used</h2>
   <ul>
-    <li><strong>storage</strong> — to save session URLs and UI preferences locally.</li>
-    <li><strong>tabs</strong> — to open or focus the Parallel Chat viewer tab.</li>
-    <li><strong>webNavigation</strong> — to detect URL changes inside iframes for session auto-save.</li>
-    <li><strong>declarativeNetRequest</strong> — to remove <code>X-Frame-Options</code> and <code>Content-Security-Policy</code> headers from AI service responses so they can be displayed in iframes. This rule applies only to requests initiated from this extension.</li>
+    <li><strong>storage</strong> - saves session URLs and UI preferences locally.</li>
+    <li><strong>tabs</strong> - opens or focuses the Parallel Chat viewer tab.</li>
+    <li><strong>webNavigation</strong> - detects URL changes inside iframes for session auto-save.</li>
+    <li><strong>declarativeNetRequest</strong> - removes <code>X-Frame-Options</code> and <code>Content-Security-Policy</code> headers from the AI pages loaded by the extension, plus the nested Claude and Google subframes required for authentication or cookie refresh.</li>
   </ul>
 
   <h2>Data Retention</h2>
   <p>
     All locally stored data persists until you remove the extension or clear browser storage.
-    You can delete all saved sessions at any time from within the extension.
+    You can delete saved sessions at any time from within the extension.
   </p>
 
   <h2>Contact</h2>
