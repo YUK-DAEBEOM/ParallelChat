@@ -89,11 +89,24 @@ body.resizing-v .iframe-shield { display: block; cursor: row-resize; }
   border-bottom: 1px solid #d8d8e8;
   flex-shrink: 0;
   user-select: none;
-  cursor: pointer;
+  cursor: grab;
   transition: background 0.15s;
 }
 
 .panel-header:hover { background: #f5f5fb; }
+.panel-header:active { cursor: grabbing; }
+
+/* Panel drag-and-drop reorder */
+.panel.panel-dragging {
+  opacity: 0.45;
+  outline: 2px dashed #a0a0c8;
+  outline-offset: -2px;
+}
+.panel.panel-drag-over {
+  outline: 2px solid #7c5ff5;
+  outline-offset: -2px;
+  background: rgba(124, 95, 245, 0.04);
+}
 
 .panel-dot {
   width: 8px;
@@ -633,6 +646,8 @@ body.dark .panel-header:hover { background: #1c1c30; }
 body.dark .panel-name { color: #9090cc; }
 body.dark .panel-reload-btn { color: #55558a; }
 body.dark .panel-reload-btn:hover { color: #aaa8ff; border-color: #3a3a5a; background: rgba(108,99,255,0.12); }
+body.dark .panel.panel-dragging { outline-color: #5a5a88; }
+body.dark .panel.panel-drag-over { background: rgba(124, 95, 245, 0.08); }
 
 
 body.dark #control-panel {
@@ -828,6 +843,46 @@ body.dark .onboarding-name { color: #ccccee; }
 body.dark .onboarding-steps { color: #8888aa; }
 body.dark .onboarding-close { color: #555; }
 body.dark .onboarding-close:hover { color: #aaa; background: rgba(255,255,255,0.05); }
+
+/* ===== Claude sidebar notice (iframe storage partitioning explanation) ===== */
+
+.claude-notice {
+  position: absolute;
+  top: 40px;
+  left: 8px;
+  right: 8px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 248, 220, 0.96);
+  border: 1px solid #e6c068;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b4a00;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.claude-notice.hidden { display: none; }
+.claude-notice-text { flex: 1; line-height: 1.4; }
+.claude-notice-text a { color: #a15a00; text-decoration: underline; }
+.claude-notice-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #8a6a00;
+  padding: 0 4px;
+}
+.claude-notice-close:hover { color: #3a2a00; }
+body.dark .claude-notice {
+  background: rgba(50, 40, 15, 0.96);
+  border-color: #8a6a28;
+  color: #e6c890;
+}
+body.dark .claude-notice-text a { color: #ffd280; }
+body.dark .claude-notice-close { color: #c8a860; }
 
 /* ===== Session name inline edit input (FR-06) ===== */
 
