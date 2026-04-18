@@ -27,7 +27,7 @@ function stripClaudeIncognito(url) {
 const state = {
   tabId: null,
   frames: {},      // { chatgpt: { frameId, url }, ... }
-  activeKeys: ['chatgpt', 'gemini', 'claude'],
+  activeKeys: ['chatgpt', 'gemini'],
   collapsed: false,
   selectedFiles: []
 };
