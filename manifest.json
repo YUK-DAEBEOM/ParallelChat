@@ -13,7 +13,9 @@
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://gemini.google.com/*",
-    "https://claude.ai/*"
+    "https://claude.ai/*",
+    "https://*.claude.ai/*",
+    "https://accounts.google.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -55,6 +57,16 @@
       ],
       "js": ["content/shared.js", "content/gemini.js"],
       "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "https://claude.ai/*",
+        "https://*.claude.ai/*"
+      ],
+      "js": ["content/claude-preload.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
       "all_frames": true
     },
     {

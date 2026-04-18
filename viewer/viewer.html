@@ -83,6 +83,10 @@
         <div class="panel-loading" id="loading-claude">
           <div class="loading-spinner"></div>
         </div>
+        <div class="claude-notice" id="claude-notice">
+          <span class="claude-notice-text">대화는 정상 저장됩니다. 이전 대화 목록은 <a href="https://claude.ai/chats" target="_blank" rel="noopener">claude.ai/chats</a> 에서 확인하세요.</span>
+          <button class="claude-notice-close" aria-label="안내 닫기" title="안내 닫기">×</button>
+        </div>
         <div class="panel-onboarding" id="onboarding-claude" data-key="claude">
           <button class="onboarding-close" aria-label="안내 닫기">×</button>
           <div class="onboarding-body">
@@ -95,7 +99,7 @@
             <button class="onboarding-link-btn" data-url="https://claude.ai/">Claude 사이트로 이동</button>
           </div>
         </div>
-        <iframe id="iframe-claude" src="https://claude.ai/" title="Claude"></iframe>
+        <iframe id="iframe-claude" src="https://claude.ai/new" title="Claude"></iframe>
       </div>
     </div>
 
