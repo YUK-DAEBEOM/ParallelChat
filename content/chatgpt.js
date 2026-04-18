@@ -31,20 +31,20 @@ const FILE_INPUT_SELECTORS = [
   'input[type="file"]'
 ];
 
+const applyTheme = createThemeApplicator({
+  apply: (theme) => {
+    const html = document.documentElement;
+    html.classList.toggle('dark', theme === 'dark');
+    html.setAttribute('data-theme', theme);
+    html.style.colorScheme = theme;
+    try { localStorage.setItem('theme', theme); } catch (_) {}
+  },
+  attributeFilter: ['class', 'data-theme']
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'setTheme') {
-    const html = document.documentElement;
-    if (message.theme === 'dark') {
-      html.classList.add('dark');
-      html.setAttribute('data-theme', 'dark');
-      html.style.colorScheme = 'dark';
-      try { localStorage.setItem('theme', 'dark'); } catch (_) {}
-    } else {
-      html.classList.remove('dark');
-      html.setAttribute('data-theme', 'light');
-      html.style.colorScheme = 'light';
-      try { localStorage.setItem('theme', 'light'); } catch (_) {}
-    }
+    applyTheme(message.theme);
     sendResponse({ ok: true });
     return;
   }
@@ -55,6 +55,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+announceReady();
 
 async function handleMessage({ text, files }) {
   const input = await waitForElement(INPUT_SELECTORS);

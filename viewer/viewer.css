@@ -919,3 +919,17 @@ body.dark .session-name-input {
 .privacy-link:hover { color: #6c63ff; text-decoration: underline; }
 body.dark .privacy-link { color: #4a4a6a; }
 body.dark .privacy-link:hover { color: #8880ee; }
+
+/* ===== AI toggle drag-and-drop reorder ===== */
+.ai-toggle-btn {
+  cursor: grab;
+  user-select: none;
+}
+.ai-toggle-btn.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.ai-toggle-btn.drag-over {
+  outline: 2px dashed #6c63ff;
+  outline-offset: 2px;
+}

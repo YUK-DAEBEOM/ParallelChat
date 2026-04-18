@@ -189,13 +189,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (isDark) {
       const style = document.createElement('style');
       style.id = 'parallelchat-theme';
-      style.textContent = `:root {
-        color-scheme: dark !important;
-        --md-sys-color-background: #1c1b1f !important;
-        --md-sys-color-surface: #141218 !important;
-        --md-sys-color-on-background: #e6e1e5 !important;
-        --md-sys-color-on-surface: #e6e1e5 !important;
-      }`;
+      style.textContent = `
+        :root {
+          color-scheme: dark !important;
+          --md-sys-color-background: #1c1b1f !important;
+          --md-sys-color-surface: #141218 !important;
+          --md-sys-color-surface-container: #201f23 !important;
+          --md-sys-color-surface-container-low: #1d1c1f !important;
+          --md-sys-color-surface-container-high: #2b2930 !important;
+          --md-sys-color-surface-container-highest: #36343b !important;
+          --md-sys-color-on-background: #e6e1e5 !important;
+          --md-sys-color-on-surface: #e6e1e5 !important;
+          --md-sys-color-on-surface-variant: #c8c5cb !important;
+          --md-sys-color-outline: #938f99 !important;
+          --md-sys-color-outline-variant: #49454f !important;
+          --md-sys-color-secondary-container: #4a4458 !important;
+        }
+        html, body,
+        .conversation-container,
+        .side-navigation-v2,
+        bard-sidenav,
+        bard-sidenav-content,
+        bard-mode-switcher,
+        rich-textarea,
+        input-area-v2,
+        toolbox-drawer,
+        chat-window,
+        [class*="chat-history"],
+        [class*="input-container"],
+        [class*="mat-drawer"] {
+          background-color: var(--md-sys-color-background, #141218) !important;
+          color: var(--md-sys-color-on-background, #e6e1e5) !important;
+        }
+      `;
       document.head.appendChild(style);
     }
     sendResponse({ ok: true });
@@ -208,6 +234,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+announceReady();
 
 async function handleMessage({ text, files }) {
   const input = await findGeminiInput(8000);

@@ -25,6 +25,45 @@ function registerFrame(key) {
   }
 }
 
+// Notify viewer that this content script is ready to receive setTheme
+function announceReady() {
+  try {
+    chrome.runtime.sendMessage({ type: 'themeReady' });
+  } catch (_) {
+    setTimeout(() => {
+      try { chrome.runtime.sendMessage({ type: 'themeReady' }); } catch (_) {}
+    }, 500);
+  }
+}
+
+// Applies theme via `apply`, then watches html attrs for host-React overwrites
+// and re-applies once (throttle 500ms). observerPaused suppresses feedback
+// loops from our own mutations.
+function createThemeApplicator({ apply, attributeFilter }) {
+  let lastAppliedTheme = null;
+  let observerPaused = false;
+  let reapplyTimer = null;
+
+  function applyTheme(theme) {
+    observerPaused = true;
+    apply(theme);
+    lastAppliedTheme = theme;
+    queueMicrotask(() => { observerPaused = false; });
+  }
+
+  new MutationObserver(() => {
+    if (observerPaused || reapplyTimer || !lastAppliedTheme) return;
+    reapplyTimer = setTimeout(() => {
+      reapplyTimer = null;
+      const currentlyDark = document.documentElement.classList.contains('dark');
+      if (lastAppliedTheme === 'dark' && !currentlyDark) applyTheme('dark');
+      else if (lastAppliedTheme === 'light' && currentlyDark) applyTheme('light');
+    }, 500);
+  }).observe(document.documentElement, { attributes: true, attributeFilter });
+
+  return applyTheme;
+}
+
 function waitForElement(selectors, timeout = 5000) {
   return new Promise((resolve) => {
     for (const sel of selectors) {
