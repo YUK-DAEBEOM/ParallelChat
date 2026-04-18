@@ -4,13 +4,25 @@ const AI_ORDER = ['chatgpt', 'gemini', 'claude'];
 const AI_DEFAULTS = {
   chatgpt: 'https://chatgpt.com/',
   gemini: 'https://gemini.google.com/app',
-  claude: 'https://claude.ai/'
+  claude: 'https://claude.ai/new'
 };
 const AI_INFO = {
   chatgpt: { name: 'ChatGPT', icon: '🤖', url: 'https://chatgpt.com/' },
   gemini:  { name: 'Gemini',  icon: '✨', url: 'https://gemini.google.com/app' },
-  claude:  { name: 'Claude',  icon: '🔶', url: 'https://claude.ai/' },
+  claude:  { name: 'Claude',  icon: '🔶', url: 'https://claude.ai/new' },
 };
+
+// Claude URL에서 incognito 파라미터를 제거해 "임시 채팅" 기본 진입을 차단
+function stripClaudeIncognito(url) {
+  if (!url || !url.includes('claude.ai')) return url;
+  try {
+    const u = new URL(url);
+    if (u.searchParams.has('incognito')) u.searchParams.delete('incognito');
+    // 빈 쿼리 제거로 깔끔하게
+    const qs = u.searchParams.toString();
+    return u.origin + u.pathname + (qs ? ('?' + qs) : '') + u.hash;
+  } catch { return url; }
+}
 
 const state = {
   tabId: null,
@@ -158,8 +170,8 @@ function dismissOnboarding() {
 // ===== Init =====
 
 async function loadPersistedState() {
-  const { activeKeys, controlHeight: savedHeight, theme } =
-    await chrome.storage.local.get(['activeKeys', 'controlHeight', 'theme']);
+  const { activeKeys, controlHeight: savedHeight, theme, panelOrder } =
+    await chrome.storage.local.get(['activeKeys', 'controlHeight', 'theme', 'panelOrder']);
 
   if (activeKeys) state.activeKeys = activeKeys;
 
@@ -174,6 +186,41 @@ async function loadPersistedState() {
     document.body.classList.add('dark');
     themeBtn.textContent = '🌙 Dark';
   }
+
+  // 저장된 패널 순서 복원 (storage 재저장 없이 DOM만 재정렬)
+  if (panelOrder && panelOrder.length === AI_ORDER.length) {
+    applyPanelOrder(panelOrder);
+  }
+}
+
+// ===== Panel reorder =====
+
+function applyPanelOrder(newOrder) {
+  const container = document.getElementById('panels-container');
+  const dividers  = [...document.querySelectorAll('.panel-divider')];
+
+  // 패널과 divider를 새 순서로 DOM 재배치
+  newOrder.forEach((key, i) => {
+    container.appendChild(document.getElementById(`panel-${key}`));
+    if (i < newOrder.length - 1) {
+      const d = dividers[i];
+      d.dataset.left  = key;
+      d.dataset.right = newOrder[i + 1];
+      container.appendChild(d);
+    }
+  });
+
+  // AI_ORDER를 제자리에서 갱신 (기존 참조 유지)
+  AI_ORDER.splice(0, AI_ORDER.length, ...newOrder);
+
+  // 너비 리셋 → 균등 분배
+  document.querySelectorAll('.panel').forEach(p => { p.style.flex = ''; });
+}
+
+function reorderPanels(newOrder) {
+  applyPanelOrder(newOrder);
+  updatePanelVisibility();
+  chrome.storage.local.set({ panelOrder: newOrder });
 }
 
 async function init() {
@@ -204,7 +251,24 @@ async function init() {
 
   setupLoadingSpinners();
   await initOnboarding();
+  initClaudeNotice();
   input.focus();
+}
+
+// Claude 패널 사이드바 안내 배너 — 닫으면 로컬 저장해 다시 표시 안함
+async function initClaudeNotice() {
+  const notice = document.getElementById('claude-notice');
+  if (!notice) return;
+  const { claudeNoticeDismissed } = await chrome.storage.local.get('claudeNoticeDismissed');
+  if (claudeNoticeDismissed) {
+    notice.classList.add('hidden');
+    return;
+  }
+  const closeBtn = notice.querySelector('.claude-notice-close');
+  closeBtn?.addEventListener('click', async () => {
+    notice.classList.add('hidden');
+    await chrome.storage.local.set({ claudeNoticeDismissed: true });
+  });
 }
 
 // ===== Loading spinners =====
@@ -340,6 +404,33 @@ async function autoSaveUrls() {
 
   if (Object.keys(urls).length > 0) {
     await chrome.storage.local.set({ lastUrls: urls });
+  }
+}
+
+function normalizeSessionUrls(urls = {}) {
+  const normalized = {};
+  for (const key of AI_ORDER) {
+    normalized[key] = urls[key] || null;
+  }
+  return normalized;
+}
+
+function areSessionUrlsEqual(a = {}, b = {}) {
+  const left = normalizeSessionUrls(a);
+  const right = normalizeSessionUrls(b);
+  return AI_ORDER.every(key => left[key] === right[key]);
+}
+
+function isConversationUrl(key, url) {
+  try {
+    const current = new URL(url);
+    const fallback = new URL(AI_DEFAULTS[key]);
+    return (
+      current.origin === fallback.origin &&
+      current.pathname.replace(/\/$/, '') !== fallback.pathname.replace(/\/$/, '')
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -497,7 +588,9 @@ async function reloadIframes(forceNew = false) {
     const iframe = document.getElementById(`iframe-${key}`);
     if (iframe) {
       showSpinner(key);
-      iframe.src = urls[key] || AI_DEFAULTS[key];
+      let target = urls[key] || AI_DEFAULTS[key];
+      if (key === 'claude') target = stripClaudeIncognito(target);
+      iframe.src = target;
     }
   }
 }
@@ -576,6 +669,11 @@ async function loadSession(id) {
 
   state.activeKeys = session.activeKeys || [...AI_ORDER];
   updatePanelVisibility();
+  showAllSpinners();
+  await chrome.storage.local.set({
+    activeKeys: state.activeKeys,
+    lastUrls: { ...session.urls }
+  });
 
   // Show loading feedback
   const bar = document.getElementById('sendFeedback');
@@ -585,7 +683,8 @@ async function loadSession(id) {
   for (const key of AI_ORDER) {
     const iframe = document.getElementById(`iframe-${key}`);
     if (!iframe) continue;
-    const url = session.urls[key] || AI_DEFAULTS[key];
+    let url = session.urls[key] || AI_DEFAULTS[key];
+    if (key === 'claude') url = stripClaudeIncognito(url);
     iframe.src = 'about:blank';
     // Small delay prevents race with blank page
     await new Promise(r => setTimeout(r, 30));
@@ -623,17 +722,13 @@ async function autoSaveIfNew() {
     }
   } catch { return; }
 
-  // Only save if at least one iframe has a real conversation URL (non-root path)
-  const hasConvo = Object.values(urls).some(url => {
-    try { return new URL(url).pathname.replace(/\/$/, '').length > 1; } catch { return false; }
-  });
+  // Only save if at least one iframe has navigated away from its default landing page
+  const hasConvo = Object.entries(urls).some(([key, url]) => isConversationUrl(key, url));
   if (!hasConvo) return;
 
-  // Skip if this URL set is already saved
+  // Skip only if the full saved URL set is identical
   const sessions = await getSessions();
-  const alreadySaved = sessions.some(s =>
-    Object.entries(urls).some(([k, url]) => s.urls?.[k] === url)
-  );
+  const alreadySaved = sessions.some(s => areSessionUrlsEqual(s.urls, urls));
   if (alreadySaved) return;
 
   await saveSession();
@@ -912,7 +1007,9 @@ document.querySelectorAll('.panel-reload-btn').forEach(btn => {
     const iframe = document.getElementById(`iframe-${key}`);
     if (!iframe) return;
     const { lastUrls = {} } = await chrome.storage.local.get('lastUrls');
-    iframe.src = lastUrls[key] || AI_DEFAULTS[key];
+    let url = lastUrls[key] || AI_DEFAULTS[key];
+    if (key === 'claude') url = stripClaudeIncognito(url);
+    iframe.src = url;
   });
 });
 
@@ -925,7 +1022,10 @@ fileInput.addEventListener('change', (e) => {
 
 document.addEventListener('dragover', (e) => {
   e.preventDefault();
-  document.body.classList.add('dragging');
+  // 패널 재정렬 드래그(text/plain)일 때는 파일 드롭 오버레이 표시 안 함
+  if ([...e.dataTransfer.types].includes('Files')) {
+    document.body.classList.add('dragging');
+  }
 });
 
 document.addEventListener('dragleave', (e) => {
@@ -982,6 +1082,60 @@ document.addEventListener('drop', (e) => {
     drag.divider.classList.remove('dragging');
     document.body.classList.remove('resizing');
     drag = null;
+  });
+})();
+
+// ===== Panel drag-and-drop reorder =====
+
+(function initPanelDragDrop() {
+  let draggingKey = null;
+
+  ['chatgpt', 'gemini', 'claude'].forEach(key => {
+    const header = document.getElementById(`panel-header-${key}`);
+    const panel  = document.getElementById(`panel-${key}`);
+    if (!header || !panel) return;
+
+    header.draggable = true;
+
+    header.addEventListener('dragstart', (e) => {
+      // 새로고침(↺) 버튼 위에서 드래그 시작하면 무시
+      if (e.target.closest('.panel-reload-btn')) { e.preventDefault(); return; }
+      draggingKey = key;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', key); // Firefox 호환 필수
+      setTimeout(() => panel.classList.add('panel-dragging'), 0);
+    });
+
+    header.addEventListener('dragend', () => {
+      document.querySelectorAll('.panel').forEach(p =>
+        p.classList.remove('panel-dragging', 'panel-drag-over')
+      );
+      draggingKey = null;
+    });
+
+    panel.addEventListener('dragover', (e) => {
+      if (!draggingKey || draggingKey === key) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('panel-drag-over'));
+      panel.classList.add('panel-drag-over');
+    });
+
+    panel.addEventListener('dragleave', (e) => {
+      if (!panel.contains(e.relatedTarget)) panel.classList.remove('panel-drag-over');
+    });
+
+    panel.addEventListener('drop', (e) => {
+      e.preventDefault();
+      panel.classList.remove('panel-drag-over');
+      if (!draggingKey || draggingKey === key) return;
+
+      const newOrder = [...AI_ORDER];
+      const fi = newOrder.indexOf(draggingKey);
+      const ti = newOrder.indexOf(key);
+      [newOrder[fi], newOrder[ti]] = [newOrder[ti], newOrder[fi]];
+      reorderPanels(newOrder);
+    });
   });
 })();
 
