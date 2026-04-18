@@ -25,6 +25,17 @@ function registerFrame(key) {
   }
 }
 
+// Notify viewer that this content script is ready to receive setTheme
+function announceReady() {
+  try {
+    chrome.runtime.sendMessage({ type: 'themeReady' });
+  } catch (_) {
+    setTimeout(() => {
+      try { chrome.runtime.sendMessage({ type: 'themeReady' }); } catch (_) {}
+    }, 500);
+  }
+}
+
 function waitForElement(selectors, timeout = 5000) {
   return new Promise((resolve) => {
     for (const sel of selectors) {

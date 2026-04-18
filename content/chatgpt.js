@@ -31,20 +31,30 @@ const FILE_INPUT_SELECTORS = [
   'input[type="file"]'
 ];
 
+// Theme application with React-overwrite defense
+let lastAppliedTheme = null;
+let observerPaused = false;
+
+function applyThemeCGPT(theme) {
+  const html = document.documentElement;
+  observerPaused = true;
+  if (theme === 'dark') {
+    html.classList.add('dark');
+    html.setAttribute('data-theme', 'dark');
+    html.style.colorScheme = 'dark';
+  } else {
+    html.classList.remove('dark');
+    html.setAttribute('data-theme', 'light');
+    html.style.colorScheme = 'light';
+  }
+  try { localStorage.setItem('theme', theme); } catch (_) {}
+  lastAppliedTheme = theme;
+  queueMicrotask(() => { observerPaused = false; });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'setTheme') {
-    const html = document.documentElement;
-    if (message.theme === 'dark') {
-      html.classList.add('dark');
-      html.setAttribute('data-theme', 'dark');
-      html.style.colorScheme = 'dark';
-      try { localStorage.setItem('theme', 'dark'); } catch (_) {}
-    } else {
-      html.classList.remove('dark');
-      html.setAttribute('data-theme', 'light');
-      html.style.colorScheme = 'light';
-      try { localStorage.setItem('theme', 'light'); } catch (_) {}
-    }
+    applyThemeCGPT(message.theme);
     sendResponse({ ok: true });
     return;
   }
@@ -55,6 +65,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+// React 덮어쓰기 감지 → 1회 재적용 (throttle 500ms)
+let reapplyTimer = null;
+new MutationObserver(() => {
+  if (observerPaused || reapplyTimer || !lastAppliedTheme) return;
+  reapplyTimer = setTimeout(() => {
+    reapplyTimer = null;
+    const html = document.documentElement;
+    const currentlyDark = html.classList.contains('dark');
+    if (lastAppliedTheme === 'dark' && !currentlyDark) applyThemeCGPT('dark');
+    else if (lastAppliedTheme === 'light' && currentlyDark) applyThemeCGPT('light');
+  }, 500);
+}).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['class', 'data-theme']
+});
+
+announceReady();
 
 async function handleMessage({ text, files }) {
   const input = await waitForElement(INPUT_SELECTORS);

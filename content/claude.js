@@ -18,31 +18,29 @@ const FILE_INPUT_SELECTORS = [
   'input[type="file"]'
 ];
 
+// Theme application with React-overwrite defense
+let lastAppliedTheme = null;
+let observerPaused = false;
+
+function applyThemeClaude(theme) {
+  const html = document.documentElement;
+  const dark = theme === 'dark';
+  observerPaused = true;
+  html.classList.toggle('dark', dark);
+  html.style.colorScheme = dark ? 'dark' : 'light';
+  html.setAttribute('data-color-mode', dark ? 'dark' : 'light');
+  try {
+    ['theme', 'colorScheme', 'color-scheme', 'ui-theme'].forEach(k =>
+      localStorage.setItem(k, dark ? 'dark' : 'light')
+    );
+  } catch (_) {}
+  lastAppliedTheme = theme;
+  queueMicrotask(() => { observerPaused = false; });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'setTheme') {
-    const html = document.documentElement;
-    const dark = message.theme === 'dark';
-
-    // Apply immediately
-    html.classList.toggle('dark', dark);
-    html.style.colorScheme = dark ? 'dark' : 'light';
-    html.setAttribute('data-color-mode', dark ? 'dark' : 'light');
-
-    // Try every known localStorage key Claude might use
-    try {
-      const val = dark ? 'dark' : 'light';
-      ['theme', 'colorScheme', 'color-scheme', 'ui-theme'].forEach(k => localStorage.setItem(k, val));
-    } catch (_) {}
-
-    // Keep it applied — Claude's React may re-render and strip the class
-    if (window._pcThemeObserver) window._pcThemeObserver.disconnect();
-    if (dark) {
-      window._pcThemeObserver = new MutationObserver(() => {
-        if (!html.classList.contains('dark')) html.classList.add('dark');
-      });
-      window._pcThemeObserver.observe(html, { attributes: true, attributeFilter: ['class'] });
-    }
-
+    applyThemeClaude(message.theme);
     sendResponse({ ok: true });
     return;
   }
@@ -53,6 +51,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+// React 덮어쓰기 감지 → 1회 재적용 (throttle 500ms)
+let reapplyTimer = null;
+new MutationObserver(() => {
+  if (observerPaused || reapplyTimer || !lastAppliedTheme) return;
+  reapplyTimer = setTimeout(() => {
+    reapplyTimer = null;
+    const html = document.documentElement;
+    const currentlyDark = html.classList.contains('dark');
+    if (lastAppliedTheme === 'dark' && !currentlyDark) applyThemeClaude('dark');
+    else if (lastAppliedTheme === 'light' && currentlyDark) applyThemeClaude('light');
+  }, 500);
+}).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['class', 'data-color-mode']
+});
+
+announceReady();
 
 async function handleMessage({ text, files }) {
   const input = await waitForElement(INPUT_SELECTORS);

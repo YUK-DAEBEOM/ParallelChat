@@ -20,6 +20,12 @@ node_modules/
 .claude/
 CLAUDE.md
 
+# ===== PDCA 작업 문서 (로컬 전용) =====
+docs/01-plan/
+docs/02-design/
+docs/03-analysis/
+docs/04-report/
+
 # ===== 배포 관련 (로컬 전용) =====
 dist/
 store-listing.md

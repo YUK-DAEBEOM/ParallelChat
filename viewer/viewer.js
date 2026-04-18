@@ -191,6 +191,9 @@ async function loadPersistedState() {
   if (panelOrder && panelOrder.length === AI_ORDER.length) {
     applyPanelOrder(panelOrder);
   }
+
+  // 복원된 테마를 iframe에도 1회 push (content script 미준비 시 themeReady가 보완)
+  broadcastTheme(currentTheme);
 }
 
 // ===== Panel reorder =====
@@ -215,6 +218,18 @@ function applyPanelOrder(newOrder) {
 
   // 너비 리셋 → 균등 분배
   document.querySelectorAll('.panel').forEach(p => { p.style.flex = ''; });
+
+  // 상단 AI 토글 버튼도 같은 순서로 재배치
+  syncToggleOrder(newOrder);
+}
+
+function syncToggleOrder(newOrder) {
+  const container = document.querySelector('.ai-toggles');
+  if (!container) return;
+  newOrder.forEach(key => {
+    const btn = document.getElementById(`toggle-${key}`);
+    if (btn) container.appendChild(btn);
+  });
 }
 
 function reorderPanels(newOrder) {
@@ -309,6 +324,18 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (sender.tab?.id === state.tabId) {
     state.frames[msg.key] = { frameId: sender.frameId, url: sender.url || AI_DEFAULTS[msg.key] };
   }
+});
+
+// ===== Theme handshake: content script가 준비되면 현재 테마를 응답 =====
+
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg.type !== 'themeReady' || !sender.frameId) return;
+  if (state.tabId === null || sender.tab?.id !== state.tabId) return;
+  chrome.tabs.sendMessage(
+    state.tabId,
+    { type: 'setTheme', theme: currentTheme },
+    { frameId: sender.frameId }
+  ).catch(() => {});
 });
 
 // ===== Frame discovery via getAllFrames (authoritative source) =====
@@ -975,6 +1002,23 @@ langBtn.addEventListener('click', () => {
 // ===== Theme toggle =====
 
 let currentTheme = 'light';
+let lastBroadcastTheme = null;
+
+async function broadcastTheme(theme) {
+  if (theme === lastBroadcastTheme) return; // 동일 테마 중복 발송 skip
+  lastBroadcastTheme = theme;
+  if (!state.tabId) return;
+  await discoverFrames();
+  for (const key of AI_ORDER) {
+    const frame = state.frames[key];
+    if (!frame) continue;
+    chrome.tabs.sendMessage(
+      state.tabId,
+      { type: 'setTheme', theme },
+      { frameId: frame.frameId }
+    ).catch(() => {});
+  }
+}
 
 themeBtn.addEventListener('click', async () => {
   currentTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -986,13 +1030,7 @@ themeBtn.addEventListener('click', async () => {
   chrome.storage.local.set({ theme: currentTheme });
 
   // Toggle all AI service iframes
-  await discoverFrames();
-  for (const key of AI_ORDER) {
-    const frame = state.frames[key];
-    if (!frame) continue;
-    chrome.tabs.sendMessage(state.tabId, { type: 'setTheme', theme: currentTheme }, { frameId: frame.frameId })
-      .catch(() => {});
-  }
+  broadcastTheme(currentTheme);
 });
 
 saveSidebarBtn.addEventListener('click', async () => {
@@ -1128,6 +1166,59 @@ document.addEventListener('drop', (e) => {
     panel.addEventListener('drop', (e) => {
       e.preventDefault();
       panel.classList.remove('panel-drag-over');
+      if (!draggingKey || draggingKey === key) return;
+
+      const newOrder = [...AI_ORDER];
+      const fi = newOrder.indexOf(draggingKey);
+      const ti = newOrder.indexOf(key);
+      [newOrder[fi], newOrder[ti]] = [newOrder[ti], newOrder[fi]];
+      reorderPanels(newOrder);
+    });
+  });
+})();
+
+// ===== Top AI toggle drag-and-drop reorder =====
+
+(function initToggleDragDrop() {
+  let draggingKey = null;
+
+  ['chatgpt', 'gemini', 'claude'].forEach(key => {
+    const btn = document.getElementById(`toggle-${key}`);
+    if (!btn) return;
+
+    btn.draggable = true;
+
+    btn.addEventListener('dragstart', (e) => {
+      draggingKey = key;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', key); // Firefox 호환 필수
+      btn.classList.add('dragging');
+    });
+
+    btn.addEventListener('dragend', () => {
+      draggingKey = null;
+      document.querySelectorAll('.ai-toggle-btn').forEach(b =>
+        b.classList.remove('dragging', 'drag-over')
+      );
+    });
+
+    btn.addEventListener('dragover', (e) => {
+      if (!draggingKey || draggingKey === key) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.ai-toggle-btn').forEach(b =>
+        b.classList.remove('drag-over')
+      );
+      btn.classList.add('drag-over');
+    });
+
+    btn.addEventListener('dragleave', (e) => {
+      if (!btn.contains(e.relatedTarget)) btn.classList.remove('drag-over');
+    });
+
+    btn.addEventListener('drop', (e) => {
+      e.preventDefault();
+      btn.classList.remove('drag-over');
       if (!draggingKey || draggingKey === key) return;
 
       const newOrder = [...AI_ORDER];
