@@ -18,29 +18,25 @@ const FILE_INPUT_SELECTORS = [
   'input[type="file"]'
 ];
 
-// Theme application with React-overwrite defense
-let lastAppliedTheme = null;
-let observerPaused = false;
+// Claude reads theme from multiple localStorage keys across versions.
+const CLAUDE_THEME_KEYS = ['theme', 'colorScheme', 'color-scheme', 'ui-theme'];
 
-function applyThemeClaude(theme) {
-  const html = document.documentElement;
-  const dark = theme === 'dark';
-  observerPaused = true;
-  html.classList.toggle('dark', dark);
-  html.style.colorScheme = dark ? 'dark' : 'light';
-  html.setAttribute('data-color-mode', dark ? 'dark' : 'light');
-  try {
-    ['theme', 'colorScheme', 'color-scheme', 'ui-theme'].forEach(k =>
-      localStorage.setItem(k, dark ? 'dark' : 'light')
-    );
-  } catch (_) {}
-  lastAppliedTheme = theme;
-  queueMicrotask(() => { observerPaused = false; });
-}
+const applyTheme = createThemeApplicator({
+  apply: (theme) => {
+    const html = document.documentElement;
+    html.classList.toggle('dark', theme === 'dark');
+    html.setAttribute('data-color-mode', theme);
+    html.style.colorScheme = theme;
+    try {
+      CLAUDE_THEME_KEYS.forEach(k => localStorage.setItem(k, theme));
+    } catch (_) {}
+  },
+  attributeFilter: ['class', 'data-color-mode']
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'setTheme') {
-    applyThemeClaude(message.theme);
+    applyTheme(message.theme);
     sendResponse({ ok: true });
     return;
   }
@@ -50,22 +46,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
-});
-
-// React 덮어쓰기 감지 → 1회 재적용 (throttle 500ms)
-let reapplyTimer = null;
-new MutationObserver(() => {
-  if (observerPaused || reapplyTimer || !lastAppliedTheme) return;
-  reapplyTimer = setTimeout(() => {
-    reapplyTimer = null;
-    const html = document.documentElement;
-    const currentlyDark = html.classList.contains('dark');
-    if (lastAppliedTheme === 'dark' && !currentlyDark) applyThemeClaude('dark');
-    else if (lastAppliedTheme === 'light' && currentlyDark) applyThemeClaude('light');
-  }, 500);
-}).observe(document.documentElement, {
-  attributes: true,
-  attributeFilter: ['class', 'data-color-mode']
 });
 
 announceReady();
