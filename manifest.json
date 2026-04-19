@@ -32,8 +32,7 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+M",
-        "mac": "Command+Shift+M"
+        "default": "Alt+Shift+P"
       },
       "description": "Open Parallel Chat"
     }

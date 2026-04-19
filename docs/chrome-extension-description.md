@@ -31,7 +31,7 @@ KEY FEATURES
 - File attachments: Attach images and documents to send to all AIs at once
 - Panel toggle & reorder: Show or hide any AI panel, and drag the top toggle buttons to rearrange the panel order
 - Dark / Light theme: Switch all panels between dark and light mode at once — the theme is synced into each AI's embedded view
-- Keyboard shortcut: Open Parallel Chat instantly with Ctrl+Shift+M (Cmd+Shift+M on Mac)
+- Keyboard shortcut: Open Parallel Chat instantly with Alt+Shift+P (Option+Shift+P on Mac). If the default shortcut is not active, you can assign or change it at chrome://extensions/shortcuts
 - Language toggle: Switch the UI between English and Korean at any time
 
 
