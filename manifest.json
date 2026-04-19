@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Parallel Chat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Send one message to ChatGPT, Gemini, and Claude at the same time. Compare AI answers side-by-side in a single tab.",
   "permissions": [
     "storage",
